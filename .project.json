@@ -7,7 +7,7 @@
   "tags": ["calculator", "utility"],
   "stack": ["Next.js", "TypeScript", "Tailwind CSS"],
   "links": {
-    "github": "",
+    "github": "https://github.com/castroarun/caclulate_anything",
     "live": "",
     "jira": "https://castroarun.atlassian.net/jira/software/projects/CALC/boards/167"
   },
