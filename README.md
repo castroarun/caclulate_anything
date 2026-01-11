@@ -12,7 +12,7 @@
 </h1>
 
 <h3 align="center">
-  Calculate everything. Plan anything. <em>Beautifully simple.</em>
+  Calculate everything. Plan anything. <em><b>Beautifully</b> <a href="#"><img src="https://img.shields.io/badge/simple.-2563EB?style=flat-square&labelColor=2563EB" alt="simple." /></a></em>
 </h3>
 
 <p align="center">
