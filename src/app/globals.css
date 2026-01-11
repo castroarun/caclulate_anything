@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+
+  /* Tabular numbers for financial displays */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  /* Calculator card styles */
+  .calc-card {
+    @apply bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700;
+  }
+
+  /* Number input with slider */
+  .number-input {
+    @apply w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600
+           bg-white dark:bg-gray-800 text-gray-900 dark:text-white
+           focus:ring-2 focus:ring-blue-500 focus:border-transparent
+           transition-all duration-200;
+  }
+
+  /* Result display */
+  .result-primary {
+    @apply text-4xl font-bold text-gray-900 dark:text-white;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .result-secondary {
+    @apply text-lg text-gray-600 dark:text-gray-400;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Slider track styling */
+  input[type='range'] {
+    @apply w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer;
+  }
+
+  input[type='range']::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 1.25rem;
+    height: 1.25rem;
+    background: #2563eb;
+    border-radius: 9999px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  input[type='range']::-webkit-slider-thumb:hover {
+    background: #1d4ed8;
+  }
+
+  input[type='range']::-moz-range-thumb {
+    width: 1.25rem;
+    height: 1.25rem;
+    background: #2563eb;
+    border-radius: 9999px;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  input[type='range']::-moz-range-thumb:hover {
+    background: #1d4ed8;
+  }
+}
+
+@layer utilities {
+  /* Indian number formatting helper */
+  .indian-currency::before {
+    content: '₹';
+    margin-right: 0.25rem;
+  }
+
+  /* Animations */
+  .animate-in {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(10px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  /* Focus ring utility */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+  }
+
+  /* Touch targets for mobile */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+}

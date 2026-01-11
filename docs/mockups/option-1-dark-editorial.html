@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calci - Option 1: Dark Editorial</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0a0b;
+      --bg-secondary: #111113;
+      --bg-elevated: #18181b;
+      --bg-hover: #232326;
+      --text-primary: #fafafa;
+      --text-secondary: rgba(250, 250, 250, 0.6);
+      --text-muted: rgba(250, 250, 250, 0.35);
+      --accent: #22c55e;
+      --accent-glow: rgba(34, 197, 94, 0.15);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-hover: rgba(255, 255, 255, 0.15);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    /* Navigation */
+    nav {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      padding: 1.5rem 4rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(10, 10, 11, 0.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      z-index: 100;
+    }
+
+    .logo {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .logo-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      box-shadow: 0 0 20px var(--accent);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2.5rem;
+    }
+
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--text-primary);
+    }
+
+    /* Hero */
+    .hero {
+      padding: 10rem 4rem 6rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .hero-tag {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1.5rem;
+    }
+
+    .hero h1 {
+      font-size: clamp(3rem, 8vw, 5.5rem);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero h1 span {
+      color: var(--text-muted);
+    }
+
+    .hero-desc {
+      font-size: 1.25rem;
+      color: var(--text-secondary);
+      max-width: 500px;
+      margin-bottom: 3rem;
+    }
+
+    /* Calculator Grid */
+    .calc-grid {
+      padding: 0 4rem 6rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+      margin-bottom: 3rem;
+    }
+
+    .section-index {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+
+    .section-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .calc-card {
+      background: var(--bg-secondary);
+      padding: 2rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .calc-card:hover {
+      background: var(--bg-elevated);
+    }
+
+    .calc-card:hover .card-arrow {
+      transform: translate(4px, -4px);
+      opacity: 1;
+    }
+
+    .card-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--bg-elevated);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+      font-size: 1.5rem;
+    }
+
+    .card-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+
+    .card-desc {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .card-arrow {
+      position: absolute;
+      top: 2rem;
+      right: 2rem;
+      color: var(--text-muted);
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+
+    /* EMI Calculator Preview */
+    .calculator-preview {
+      padding: 4rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .calc-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 3rem;
+    }
+
+    .calc-inputs {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .calc-header {
+      margin-bottom: 1rem;
+    }
+
+    .calc-header h2 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.5rem;
+    }
+
+    .calc-header p {
+      color: var(--text-secondary);
+      font-size: 0.9375rem;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .input-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .input-label span:first-child {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .input-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.125rem;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .slider-track {
+      width: 100%;
+      height: 4px;
+      background: var(--bg-elevated);
+      border-radius: 2px;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .slider-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    .slider-thumb {
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 16px;
+      height: 16px;
+      background: var(--text-primary);
+      border-radius: 50%;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .slider-range {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      margin-top: 0.5rem;
+    }
+
+    /* Results Panel */
+    .calc-results {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .result-primary {
+      padding: 2rem;
+      background: var(--accent-glow);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+      border-radius: 16px;
+    }
+
+    .result-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .result-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 3rem;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      color: var(--accent);
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+
+    .result-item {
+      padding: 1.25rem;
+      background: var(--bg-elevated);
+      border-radius: 12px;
+    }
+
+    .result-item .result-value {
+      font-size: 1.5rem;
+      color: var(--text-primary);
+    }
+
+    /* Chart placeholder */
+    .chart-container {
+      height: 200px;
+      background: var(--bg-elevated);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .donut-chart {
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      background: conic-gradient(
+        var(--accent) 0deg 216deg,
+        #3b82f6 216deg 360deg
+      );
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .donut-hole {
+      width: 100px;
+      height: 100px;
+      background: var(--bg-elevated);
+      border-radius: 50%;
+    }
+
+    .chart-legend {
+      position: absolute;
+      right: 1.5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8125rem;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    /* Footer */
+    footer {
+      padding: 4rem;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="logo">
+      <span class="logo-dot"></span>
+      calci
+    </div>
+    <div class="nav-links">
+      <a href="#">Calculators</a>
+      <a href="#">Compare</a>
+      <a href="#">Learn</a>
+      <a href="#">Sign in</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-tag">Financial Intelligence</div>
+    <h1>Calculate <span>everything.</span><br>Plan anything.</h1>
+    <p class="hero-desc">Premium calculators for EMI, SIP, taxes, and net worth. Built for clarity, designed for you.</p>
+  </section>
+
+  <section class="calc-grid">
+    <div class="section-header">
+      <span class="section-index">01</span>
+      <span class="section-title">Calculators</span>
+    </div>
+    <div class="grid">
+      <div class="calc-card">
+        <div class="card-icon">🏠</div>
+        <h3 class="card-title">EMI Calculator</h3>
+        <p class="card-desc">Plan your home or car loan with detailed amortization schedules.</p>
+        <span class="card-arrow">↗</span>
+      </div>
+      <div class="calc-card">
+        <div class="card-icon">📈</div>
+        <h3 class="card-title">SIP Calculator</h3>
+        <p class="card-desc">Project your mutual fund returns with step-up options.</p>
+        <span class="card-arrow">↗</span>
+      </div>
+      <div class="calc-card">
+        <div class="card-icon">🏦</div>
+        <h3 class="card-title">FD Calculator</h3>
+        <p class="card-desc">Calculate fixed deposit maturity with compound interest.</p>
+        <span class="card-arrow">↗</span>
+      </div>
+      <div class="calc-card">
+        <div class="card-icon">💰</div>
+        <h3 class="card-title">Lumpsum</h3>
+        <p class="card-desc">One-time investment growth over time.</p>
+        <span class="card-arrow">↗</span>
+      </div>
+      <div class="calc-card">
+        <div class="card-icon">🧮</div>
+        <h3 class="card-title">Tax Planner</h3>
+        <p class="card-desc">Old vs New regime comparison for Indian taxes.</p>
+        <span class="card-arrow">↗</span>
+      </div>
+      <div class="calc-card">
+        <div class="card-icon">🌍</div>
+        <h3 class="card-title">Cost of Living</h3>
+        <p class="card-desc">Compare expenses across cities and countries.</p>
+        <span class="card-arrow">↗</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="calculator-preview">
+    <div class="section-header">
+      <span class="section-index">02</span>
+      <span class="section-title">EMI Calculator</span>
+    </div>
+    <div class="calc-container">
+      <div class="calc-inputs">
+        <div class="calc-header">
+          <h2>Home Loan EMI</h2>
+          <p>Calculate your monthly installment and total interest payable.</p>
+        </div>
+
+        <div class="input-group">
+          <div class="input-label">
+            <span>Loan Amount</span>
+            <span class="input-value">₹50,00,000</span>
+          </div>
+          <div class="slider-track">
+            <div class="slider-fill" style="width: 50%"></div>
+            <div class="slider-thumb" style="left: 50%"></div>
+          </div>
+          <div class="slider-range">
+            <span>₹1L</span>
+            <span>₹1Cr</span>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <div class="input-label">
+            <span>Interest Rate</span>
+            <span class="input-value">8.5% p.a.</span>
+          </div>
+          <div class="slider-track">
+            <div class="slider-fill" style="width: 35%"></div>
+            <div class="slider-thumb" style="left: 35%"></div>
+          </div>
+          <div class="slider-range">
+            <span>5%</span>
+            <span>15%</span>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <div class="input-label">
+            <span>Loan Tenure</span>
+            <span class="input-value">20 years</span>
+          </div>
+          <div class="slider-track">
+            <div class="slider-fill" style="width: 66%"></div>
+            <div class="slider-thumb" style="left: 66%"></div>
+          </div>
+          <div class="slider-range">
+            <span>1 yr</span>
+            <span>30 yrs</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="calc-results">
+        <div class="result-primary">
+          <div class="result-label">Monthly EMI</div>
+          <div class="result-value">₹43,391</div>
+        </div>
+
+        <div class="result-grid">
+          <div class="result-item">
+            <div class="result-label">Principal</div>
+            <div class="result-value">₹50L</div>
+          </div>
+          <div class="result-item">
+            <div class="result-label">Total Interest</div>
+            <div class="result-value">₹54.14L</div>
+          </div>
+          <div class="result-item">
+            <div class="result-label">Total Payment</div>
+            <div class="result-value">₹1.04Cr</div>
+          </div>
+          <div class="result-item">
+            <div class="result-label">Interest Ratio</div>
+            <div class="result-value">52%</div>
+          </div>
+        </div>
+
+        <div class="chart-container">
+          <div class="donut-chart">
+            <div class="donut-hole"></div>
+          </div>
+          <div class="chart-legend">
+            <div class="legend-item">
+              <span class="legend-dot" style="background: var(--accent)"></span>
+              <span>Principal (48%)</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot" style="background: #3b82f6"></span>
+              <span>Interest (52%)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>Calci — Calculate everything. Plan anything.</p>
+  </footer>
+</body>
+</html>

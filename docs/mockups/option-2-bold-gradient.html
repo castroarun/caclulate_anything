@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calci - Option 2: Bold Gradient</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #050505;
+      --bg-card: #0c0c0c;
+      --text-primary: #ffffff;
+      --text-secondary: rgba(255, 255, 255, 0.65);
+      --text-muted: rgba(255, 255, 255, 0.4);
+      --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      --gradient-2: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      --gradient-3: linear-gradient(135deg, #fc466b 0%, #3f5efb 100%);
+      --accent: #38ef7d;
+      --border: rgba(255, 255, 255, 0.06);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Outfit', system-ui, sans-serif;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Ambient glow background */
+    .ambient-glow {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .glow-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.4;
+    }
+
+    .glow-1 {
+      width: 600px;
+      height: 600px;
+      background: #667eea;
+      top: -200px;
+      left: -100px;
+    }
+
+    .glow-2 {
+      width: 500px;
+      height: 500px;
+      background: #38ef7d;
+      top: 200px;
+      right: -150px;
+    }
+
+    .glow-3 {
+      width: 400px;
+      height: 400px;
+      background: #f093fb;
+      bottom: 100px;
+      left: 30%;
+    }
+
+    /* Navigation */
+    nav {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      padding: 1.25rem 3rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+      background: rgba(5, 5, 5, 0.6);
+      backdrop-filter: blur(20px);
+    }
+
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      background: var(--gradient-2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 0.625rem 1.25rem;
+      border-radius: 100px;
+      transition: all 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .nav-cta {
+      background: var(--gradient-2) !important;
+      color: #000 !important;
+      font-weight: 600 !important;
+    }
+
+    /* Hero */
+    .hero {
+      position: relative;
+      padding: 12rem 3rem 8rem;
+      text-align: center;
+      z-index: 1;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+    }
+
+    .hero-badge::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .hero h1 {
+      font-size: clamp(3.5rem, 10vw, 7rem);
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      line-height: 0.95;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero h1 .gradient-text {
+      background: var(--gradient-1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-subtitle {
+      font-size: 1.25rem;
+      color: var(--text-secondary);
+      max-width: 480px;
+      margin: 0 auto 3rem;
+      line-height: 1.6;
+    }
+
+    .hero-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem 2rem;
+      background: var(--text-primary);
+      color: var(--bg-base);
+      font-weight: 600;
+      font-size: 1rem;
+      border-radius: 100px;
+      text-decoration: none;
+      transition: all 0.3s;
+    }
+
+    .hero-cta:hover {
+      transform: scale(1.05);
+      box-shadow: 0 20px 40px rgba(255, 255, 255, 0.15);
+    }
+
+    /* Calculator Cards */
+    .calculators {
+      position: relative;
+      padding: 0 3rem 8rem;
+      z-index: 1;
+    }
+
+    .section-label {
+      text-align: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 3rem;
+    }
+
+    .calc-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .calc-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 2rem;
+      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .calc-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--card-gradient);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .calc-card:hover {
+      transform: translateY(-8px);
+      border-color: rgba(255, 255, 255, 0.12);
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+    }
+
+    .calc-card:hover::before {
+      opacity: 1;
+    }
+
+    .card-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.75rem;
+      margin-bottom: 1.5rem;
+      background: var(--card-gradient);
+    }
+
+    .calc-card:nth-child(1) { --card-gradient: linear-gradient(135deg, #667eea, #764ba2); }
+    .calc-card:nth-child(2) { --card-gradient: linear-gradient(135deg, #11998e, #38ef7d); }
+    .calc-card:nth-child(3) { --card-gradient: linear-gradient(135deg, #fc466b, #3f5efb); }
+    .calc-card:nth-child(4) { --card-gradient: linear-gradient(135deg, #f093fb, #f5576c); }
+    .calc-card:nth-child(5) { --card-gradient: linear-gradient(135deg, #4facfe, #00f2fe); }
+    .calc-card:nth-child(6) { --card-gradient: linear-gradient(135deg, #fa709a, #fee140); }
+
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+
+    .card-desc {
+      font-size: 0.9375rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* EMI Calculator Section */
+    .emi-section {
+      position: relative;
+      padding: 6rem 3rem;
+      z-index: 1;
+    }
+
+    .emi-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 32px;
+      overflow: hidden;
+    }
+
+    .emi-header {
+      padding: 2.5rem 3rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .emi-header-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--gradient-1);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    .emi-header h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .emi-header p {
+      color: var(--text-secondary);
+      font-size: 0.9375rem;
+    }
+
+    .emi-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .emi-inputs {
+      padding: 3rem;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 2.5rem;
+    }
+
+    .input-group label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 1rem;
+    }
+
+    .input-group label span:first-child {
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .input-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .slider-container {
+      position: relative;
+    }
+
+    .slider-track {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      position: relative;
+    }
+
+    .slider-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      background: var(--gradient-2);
+      border-radius: 4px;
+    }
+
+    .slider-thumb {
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 24px;
+      height: 24px;
+      background: #fff;
+      border-radius: 50%;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      cursor: pointer;
+    }
+
+    .slider-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 0.75rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    /* Results */
+    .emi-results {
+      padding: 3rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .result-main {
+      padding: 2rem;
+      background: linear-gradient(135deg, rgba(56, 239, 125, 0.1), rgba(17, 153, 142, 0.1));
+      border: 1px solid rgba(56, 239, 125, 0.2);
+      border-radius: 20px;
+      text-align: center;
+    }
+
+    .result-main-label {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+
+    .result-main-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 3.5rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      background: var(--gradient-2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+
+    .result-card {
+      padding: 1.25rem;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+
+    .result-card-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .result-card-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    /* Donut Chart */
+    .chart-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      padding: 1rem;
+    }
+
+    .donut {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: conic-gradient(
+        #38ef7d 0deg 173deg,
+        #667eea 173deg 360deg
+      );
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .donut-center {
+      width: 90px;
+      height: 90px;
+      background: var(--bg-card);
+      border-radius: 50%;
+    }
+
+    .chart-legend {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 4px;
+    }
+
+    .legend-text {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .legend-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 600;
+      margin-left: auto;
+    }
+
+    /* Footer */
+    footer {
+      position: relative;
+      z-index: 1;
+      padding: 3rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-glow">
+    <div class="glow-orb glow-1"></div>
+    <div class="glow-orb glow-2"></div>
+    <div class="glow-orb glow-3"></div>
+  </div>
+
+  <nav>
+    <div class="logo">calci</div>
+    <div class="nav-links">
+      <a href="#">Calculators</a>
+      <a href="#">Compare</a>
+      <a href="#">Learn</a>
+      <a href="#" class="nav-cta">Get Started</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-badge">Now with Tax Planner</div>
+    <h1>
+      Smart money<br>
+      <span class="gradient-text">starts here.</span>
+    </h1>
+    <p class="hero-subtitle">
+      Premium calculators for loans, investments, and taxes.
+      Beautiful. Precise. Completely free.
+    </p>
+    <a href="#" class="hero-cta">
+      Explore Calculators
+      <span>→</span>
+    </a>
+  </section>
+
+  <section class="calculators">
+    <div class="section-label">Popular Calculators</div>
+    <div class="calc-grid">
+      <div class="calc-card">
+        <div class="card-icon">🏠</div>
+        <h3 class="card-title">EMI Calculator</h3>
+        <p class="card-desc">Plan home & car loans with amortization schedules.</p>
+      </div>
+      <div class="calc-card">
+        <div class="card-icon">📈</div>
+        <h3 class="card-title">SIP Calculator</h3>
+        <p class="card-desc">Project mutual fund returns with step-up SIP.</p>
+      </div>
+      <div class="calc-card">
+        <div class="card-icon">🏦</div>
+        <h3 class="card-title">FD Calculator</h3>
+        <p class="card-desc">Fixed deposit maturity with compounding options.</p>
+      </div>
+      <div class="calc-card">
+        <div class="card-icon">💰</div>
+        <h3 class="card-title">Lumpsum</h3>
+        <p class="card-desc">One-time investment growth projection.</p>
+      </div>
+      <div class="calc-card">
+        <div class="card-icon">🧮</div>
+        <h3 class="card-title">Tax Planner</h3>
+        <p class="card-desc">Old vs New regime for Indian taxes.</p>
+      </div>
+      <div class="calc-card">
+        <div class="card-icon">🌍</div>
+        <h3 class="card-title">Cost of Living</h3>
+        <p class="card-desc">Compare expenses across cities.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="emi-section">
+    <div class="emi-container">
+      <div class="emi-header">
+        <div class="emi-header-icon">🏠</div>
+        <div>
+          <h2>EMI Calculator</h2>
+          <p>Calculate your monthly loan payment</p>
+        </div>
+      </div>
+      <div class="emi-body">
+        <div class="emi-inputs">
+          <div class="input-group">
+            <label>
+              <span>Loan Amount</span>
+              <span class="input-value">₹50,00,000</span>
+            </label>
+            <div class="slider-container">
+              <div class="slider-track">
+                <div class="slider-fill" style="width: 50%"></div>
+                <div class="slider-thumb" style="left: 50%"></div>
+              </div>
+              <div class="slider-labels">
+                <span>₹1L</span>
+                <span>₹1Cr</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label>
+              <span>Interest Rate</span>
+              <span class="input-value">8.5%</span>
+            </label>
+            <div class="slider-container">
+              <div class="slider-track">
+                <div class="slider-fill" style="width: 35%"></div>
+                <div class="slider-thumb" style="left: 35%"></div>
+              </div>
+              <div class="slider-labels">
+                <span>5%</span>
+                <span>15%</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label>
+              <span>Tenure</span>
+              <span class="input-value">20 years</span>
+            </label>
+            <div class="slider-container">
+              <div class="slider-track">
+                <div class="slider-fill" style="width: 66%"></div>
+                <div class="slider-thumb" style="left: 66%"></div>
+              </div>
+              <div class="slider-labels">
+                <span>1 yr</span>
+                <span>30 yrs</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="emi-results">
+          <div class="result-main">
+            <div class="result-main-label">Monthly EMI</div>
+            <div class="result-main-value">₹43,391</div>
+          </div>
+
+          <div class="results-grid">
+            <div class="result-card">
+              <div class="result-card-label">Principal</div>
+              <div class="result-card-value">₹50L</div>
+            </div>
+            <div class="result-card">
+              <div class="result-card-label">Interest</div>
+              <div class="result-card-value">₹54.14L</div>
+            </div>
+            <div class="result-card">
+              <div class="result-card-label">Total</div>
+              <div class="result-card-value">₹1.04Cr</div>
+            </div>
+            <div class="result-card">
+              <div class="result-card-label">Ratio</div>
+              <div class="result-card-value">52%</div>
+            </div>
+          </div>
+
+          <div class="chart-wrapper">
+            <div class="donut">
+              <div class="donut-center"></div>
+            </div>
+            <div class="chart-legend">
+              <div class="legend-row">
+                <div class="legend-color" style="background: #38ef7d"></div>
+                <span class="legend-text">Principal</span>
+                <span class="legend-value">48%</span>
+              </div>
+              <div class="legend-row">
+                <div class="legend-color" style="background: #667eea"></div>
+                <span class="legend-text">Interest</span>
+                <span class="legend-value">52%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Calci — Smart money starts here.
+  </footer>
+</body>
+</html>

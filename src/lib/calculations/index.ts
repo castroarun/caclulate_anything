@@ -1,0 +1,5 @@
+export { calculateEMI, calculateAffordableLoan, calculateTenure } from './emi'
+export { calculateSIP, calculateRequiredSIP } from './sip'
+export { calculateFD, calculateSimpleInterestFD } from './fd'
+export { calculateLumpsum, calculateCAGR, calculateFutureValue } from './lumpsum'
+export { calculateCompound, calculateSimpleInterest, compareInterest } from './compound'

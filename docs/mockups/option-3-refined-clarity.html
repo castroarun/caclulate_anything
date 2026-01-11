@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calci - Option 3: Refined Clarity (Light)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-light: #eff6ff;
+      --success: #10b981;
+      --success-light: #d1fae5;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --bg-page: #f8fafc;
+      --bg-card: #ffffff;
+      --border: #e2e8f0;
+      --border-focus: #2563eb;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg-page);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    h1, h2, h3 {
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    }
+
+    /* Navigation */
+    nav {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1.375rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--primary);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1rem;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--text-primary);
+      background: var(--bg-page);
+    }
+
+    .nav-cta {
+      background: var(--primary) !important;
+      color: white !important;
+    }
+
+    .nav-cta:hover {
+      background: var(--primary-hover) !important;
+    }
+
+    /* Hero */
+    .hero {
+      padding: 4rem 2rem;
+      text-align: center;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.5rem, 5vw, 3.5rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 1rem;
+      color: var(--text-primary);
+    }
+
+    .hero h1 span {
+      color: var(--primary);
+    }
+
+    .hero p {
+      font-size: 1.125rem;
+      color: var(--text-secondary);
+      max-width: 500px;
+      margin: 0 auto 2rem;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.875rem 1.5rem;
+      background: var(--primary);
+      color: white;
+      font-weight: 600;
+      font-size: 0.9375rem;
+      border-radius: 10px;
+      text-decoration: none;
+      transition: all 0.2s;
+      box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-secondary {
+      padding: 0.875rem 1.5rem;
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-weight: 600;
+      font-size: 0.9375rem;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--text-muted);
+    }
+
+    /* Calculator Grid */
+    .calculators {
+      padding: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      padding-left: 0.5rem;
+    }
+
+    .calc-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .calc-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      gap: 1rem;
+    }
+
+    .calc-card:hover {
+      border-color: var(--primary);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .card-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--primary-light);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    .card-content {
+      flex: 1;
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .card-desc {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    /* EMI Calculator */
+    .emi-section {
+      padding: 3rem 2rem;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .emi-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .emi-header {
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .emi-header-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .emi-header-icon {
+      width: 44px;
+      height: 44px;
+      background: var(--primary-light);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+    }
+
+    .emi-header h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .emi-header p {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .header-btn {
+      padding: 0.5rem 1rem;
+      background: var(--bg-page);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .header-btn:hover {
+      border-color: var(--text-muted);
+      color: var(--text-primary);
+    }
+
+    .emi-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .emi-inputs {
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      border-right: 1px solid var(--border);
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .input-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .input-label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+    }
+
+    .input-label .info {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--border);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.625rem;
+      color: var(--text-muted);
+      cursor: help;
+    }
+
+    .input-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .slider-container {
+      position: relative;
+    }
+
+    .slider-track {
+      width: 100%;
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      position: relative;
+    }
+
+    .slider-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      background: var(--primary);
+      border-radius: 3px;
+    }
+
+    .slider-thumb {
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 20px;
+      height: 20px;
+      background: white;
+      border: 2px solid var(--primary);
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .slider-range {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* Results */
+    .emi-results {
+      padding: 2rem;
+      background: var(--bg-page);
+    }
+
+    .result-primary {
+      background: var(--success-light);
+      border-radius: 16px;
+      padding: 1.5rem;
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .result-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--success);
+      margin-bottom: 0.25rem;
+    }
+
+    .result-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .result-item {
+      background: white;
+      border-radius: 12px;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .result-item-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+    }
+
+    .result-item-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    /* Chart */
+    .chart-container {
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    .pie-chart {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: conic-gradient(
+        var(--primary) 0deg 173deg,
+        var(--success) 173deg 360deg
+      );
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .pie-center {
+      width: 70px;
+      height: 70px;
+      background: white;
+      border-radius: 50%;
+    }
+
+    .chart-legend {
+      flex: 1;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .legend-item:last-child {
+      border-bottom: none;
+    }
+
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 4px;
+    }
+
+    .legend-text {
+      flex: 1;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .legend-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      font-size: 0.9375rem;
+    }
+
+    /* Tips Section */
+    .tips-section {
+      padding: 1.5rem 2rem;
+      border-top: 1px solid var(--border);
+      background: linear-gradient(to right, var(--primary-light), transparent);
+    }
+
+    .tips-title {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--primary);
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .tips-list {
+      display: flex;
+      gap: 2rem;
+    }
+
+    .tip-item {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .tip-bullet {
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    /* Footer */
+    footer {
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      border-top: 1px solid var(--border);
+      background: var(--bg-card);
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="logo">
+      <div class="logo-icon">C</div>
+      Calci
+    </div>
+    <div class="nav-links">
+      <a href="#">Calculators</a>
+      <a href="#">Compare</a>
+      <a href="#">Learn</a>
+      <a href="#" class="nav-cta">Sign in</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <h1>Financial clarity,<br><span>beautifully simple.</span></h1>
+    <p>Plan your loans, investments, and taxes with India's most elegant calculator suite.</p>
+    <div class="hero-actions">
+      <a href="#" class="btn-primary">
+        Get Started
+        <span>→</span>
+      </a>
+      <a href="#" class="btn-secondary">Learn More</a>
+    </div>
+  </section>
+
+  <section class="calculators">
+    <h2 class="section-title">Popular Calculators</h2>
+    <div class="calc-grid">
+      <div class="calc-card">
+        <div class="card-icon">🏠</div>
+        <div class="card-content">
+          <h3 class="card-title">EMI Calculator</h3>
+          <p class="card-desc">Home & car loan planning</p>
+        </div>
+      </div>
+      <div class="calc-card">
+        <div class="card-icon">📈</div>
+        <div class="card-content">
+          <h3 class="card-title">SIP Calculator</h3>
+          <p class="card-desc">Mutual fund returns</p>
+        </div>
+      </div>
+      <div class="calc-card">
+        <div class="card-icon">🏦</div>
+        <div class="card-content">
+          <h3 class="card-title">FD Calculator</h3>
+          <p class="card-desc">Fixed deposit maturity</p>
+        </div>
+      </div>
+      <div class="calc-card">
+        <div class="card-icon">💰</div>
+        <div class="card-content">
+          <h3 class="card-title">Lumpsum</h3>
+          <p class="card-desc">One-time investments</p>
+        </div>
+      </div>
+      <div class="calc-card">
+        <div class="card-icon">🧮</div>
+        <div class="card-content">
+          <h3 class="card-title">Tax Planner</h3>
+          <p class="card-desc">Old vs New regime</p>
+        </div>
+      </div>
+      <div class="calc-card">
+        <div class="card-icon">🌍</div>
+        <div class="card-content">
+          <h3 class="card-title">Cost of Living</h3>
+          <p class="card-desc">City comparisons</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="emi-section">
+    <div class="emi-card">
+      <div class="emi-header">
+        <div class="emi-header-left">
+          <div class="emi-header-icon">🏠</div>
+          <div>
+            <h2>EMI Calculator</h2>
+            <p>Calculate your monthly loan payment</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button class="header-btn">Share</button>
+          <button class="header-btn">Export</button>
+        </div>
+      </div>
+
+      <div class="emi-body">
+        <div class="emi-inputs">
+          <div class="input-group">
+            <div class="input-header">
+              <span class="input-label">Loan Amount <span class="info">?</span></span>
+              <span class="input-value">₹50,00,000</span>
+            </div>
+            <div class="slider-container">
+              <div class="slider-track">
+                <div class="slider-fill" style="width: 50%"></div>
+                <div class="slider-thumb" style="left: 50%"></div>
+              </div>
+              <div class="slider-range">
+                <span>₹1 Lakh</span>
+                <span>₹1 Crore</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <div class="input-header">
+              <span class="input-label">Interest Rate <span class="info">?</span></span>
+              <span class="input-value">8.5% p.a.</span>
+            </div>
+            <div class="slider-container">
+              <div class="slider-track">
+                <div class="slider-fill" style="width: 35%"></div>
+                <div class="slider-thumb" style="left: 35%"></div>
+              </div>
+              <div class="slider-range">
+                <span>5%</span>
+                <span>15%</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <div class="input-header">
+              <span class="input-label">Loan Tenure <span class="info">?</span></span>
+              <span class="input-value">20 years</span>
+            </div>
+            <div class="slider-container">
+              <div class="slider-track">
+                <div class="slider-fill" style="width: 66%"></div>
+                <div class="slider-thumb" style="left: 66%"></div>
+              </div>
+              <div class="slider-range">
+                <span>1 year</span>
+                <span>30 years</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="emi-results">
+          <div class="result-primary">
+            <div class="result-label">Monthly EMI</div>
+            <div class="result-value">₹43,391</div>
+          </div>
+
+          <div class="results-grid">
+            <div class="result-item">
+              <div class="result-item-label">Principal</div>
+              <div class="result-item-value">₹50L</div>
+            </div>
+            <div class="result-item">
+              <div class="result-item-label">Interest</div>
+              <div class="result-item-value">₹54.14L</div>
+            </div>
+            <div class="result-item">
+              <div class="result-item-label">Total</div>
+              <div class="result-item-value">₹1.04Cr</div>
+            </div>
+          </div>
+
+          <div class="chart-container">
+            <div class="pie-chart">
+              <div class="pie-center"></div>
+            </div>
+            <div class="chart-legend">
+              <div class="legend-item">
+                <div class="legend-dot" style="background: var(--success)"></div>
+                <span class="legend-text">Principal Amount</span>
+                <span class="legend-value">₹50,00,000</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-dot" style="background: var(--primary)"></div>
+                <span class="legend-text">Total Interest</span>
+                <span class="legend-value">₹54,13,840</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tips-section">
+        <div class="tips-title">
+          <span>💡</span> Pro Tips
+        </div>
+        <div class="tips-list">
+          <div class="tip-item">
+            <span class="tip-bullet">•</span>
+            <span>Prepaying even 1 EMI per year can save years of interest</span>
+          </div>
+          <div class="tip-item">
+            <span class="tip-bullet">•</span>
+            <span>Compare rates from multiple banks before finalizing</span>
+          </div>
+          <div class="tip-item">
+            <span class="tip-bullet">•</span>
+            <span>Keep EMI below 40% of your monthly income</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Calci — Financial clarity, beautifully simple.
+  </footer>
+</body>
+</html>
