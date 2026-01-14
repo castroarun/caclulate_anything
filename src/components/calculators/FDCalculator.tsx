@@ -175,6 +175,22 @@ function calculateForRate(
   }
 }
 
+// Reverse calculation: Find required principal for a target maturity
+function calculateRequiredPrincipal(
+  targetMaturity: number,
+  rate: number,
+  tenureMonths: number,
+  compounding: CompoundingFrequency
+): number {
+  const tenureYears = tenureMonths / 12
+  const n = getCompoundingPerYear(compounding)
+  const r = rate / 100
+
+  // P = A / (1 + r/n)^(n×t)
+  const principal = targetMaturity / Math.pow(1 + r / n, n * tenureYears)
+  return Math.round(principal)
+}
+
 // ============ Main Component ============
 
 export interface FDCalculatorRef {
@@ -186,7 +202,9 @@ export interface FDCalculatorRef {
 
 const FDCalculator = forwardRef<FDCalculatorRef>(function FDCalculator(props, ref) {
   // State
+  const [mode, setMode] = useState<'calculate' | 'target'>('calculate')
   const [principal, setPrincipal] = useState(500000)
+  const [targetMaturity, setTargetMaturity] = useState(1000000) // For target mode
   const [rate, setRate] = useState(7.0)
   const [tenureMonths, setTenureMonths] = useState(24)
   const [compounding, setCompounding] = useState<CompoundingFrequency>('quarterly')
@@ -206,7 +224,9 @@ const FDCalculator = forwardRef<FDCalculatorRef>(function FDCalculator(props, re
     if (saved) {
       try {
         const data = JSON.parse(saved)
+        setMode(data.mode || 'calculate')
         setPrincipal(data.principal || 500000)
+        setTargetMaturity(data.targetMaturity || 1000000)
         setRate(data.rate || 7.0)
         setTenureMonths(data.tenureMonths || 24)
         setCompounding(data.compounding || 'quarterly')
@@ -222,20 +242,29 @@ const FDCalculator = forwardRef<FDCalculatorRef>(function FDCalculator(props, re
   // Auto-save to localStorage (only after initial load)
   useEffect(() => {
     if (!isLoaded) return
-    const data = { principal, rate, tenureMonths, compounding, payout, notes }
+    const data = { mode, principal, targetMaturity, rate, tenureMonths, compounding, payout, notes }
     localStorage.setItem('calc_fd', JSON.stringify(data))
     setLastSaved(new Date().toLocaleTimeString())
-  }, [principal, rate, tenureMonths, compounding, payout, notes, isLoaded])
+  }, [mode, principal, targetMaturity, rate, tenureMonths, compounding, payout, notes, isLoaded])
+
+  // Calculate required principal for target mode
+  const requiredPrincipal = useMemo(
+    () => calculateRequiredPrincipal(targetMaturity, rate, tenureMonths, compounding),
+    [targetMaturity, rate, tenureMonths, compounding]
+  )
+
+  // Use requiredPrincipal as principal in target mode for result calculation
+  const effectivePrincipal = mode === 'target' ? requiredPrincipal : principal
 
   // Calculate results
   const result = useMemo(
-    () => calculateFD(principal, rate, tenureMonths, compounding, payout),
-    [principal, rate, tenureMonths, compounding, payout]
+    () => calculateFD(effectivePrincipal, rate, tenureMonths, compounding, payout),
+    [effectivePrincipal, rate, tenureMonths, compounding, payout]
   )
 
   const yearlyBreakdown = useMemo(
-    () => generateYearlyBreakdown(principal, rate, tenureMonths, compounding),
-    [principal, rate, tenureMonths, compounding]
+    () => generateYearlyBreakdown(effectivePrincipal, rate, tenureMonths, compounding),
+    [effectivePrincipal, rate, tenureMonths, compounding]
   )
 
   // Update comparison rates when inputs change
@@ -304,7 +333,9 @@ const FDCalculator = forwardRef<FDCalculatorRef>(function FDCalculator(props, re
 
   // Handle clear
   const handleClear = () => {
+    setMode('calculate')
     setPrincipal(500000)
+    setTargetMaturity(1000000)
     setRate(7.0)
     setTenureMonths(24)
     setCompounding('quarterly')
@@ -767,31 +798,103 @@ const FDCalculator = forwardRef<FDCalculatorRef>(function FDCalculator(props, re
 
       {/* Main Calculator Card */}
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        {/* Mode Toggle */}
+        <div className="p-3 border-b border-slate-100 bg-slate-50">
+          <div className="flex rounded-lg bg-slate-200 p-0.5">
+            <button
+              onClick={() => setMode('calculate')}
+              className={`flex-1 px-4 py-2 text-xs font-medium rounded-md transition-all ${
+                mode === 'calculate'
+                  ? 'bg-white text-green-600 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Calculate Maturity
+            </button>
+            <button
+              onClick={() => setMode('target')}
+              className={`flex-1 px-4 py-2 text-xs font-medium rounded-md transition-all ${
+                mode === 'target'
+                  ? 'bg-white text-green-600 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Plan for Target
+            </button>
+          </div>
+          <p className="text-[10px] text-slate-500 text-center mt-2">
+            {mode === 'calculate'
+              ? 'Calculate maturity value for your deposit'
+              : 'Find the deposit needed to reach your target'}
+          </p>
+        </div>
+
         <div className="grid md:grid-cols-2">
           {/* Inputs */}
           <div className="p-5 space-y-5 border-r border-slate-100">
-            {/* Principal Amount */}
-            <div>
-              <div className="flex justify-between items-baseline mb-2">
-                <label className="text-sm font-medium text-slate-600">Principal Amount</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  ₹{formatIndianNumber(principal)}
-                </span>
+            {mode === 'calculate' ? (
+              /* Principal Amount - Calculate mode */
+              <div>
+                <div className="flex justify-between items-baseline mb-2">
+                  <label className="text-sm font-medium text-slate-600">Principal Amount</label>
+                  <span className="font-mono text-base font-semibold text-slate-900">
+                    ₹{formatIndianNumber(principal)}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={10000}
+                  max={100000000}
+                  step={10000}
+                  value={principal}
+                  onChange={(e) => setPrincipal(Number(e.target.value))}
+                  className="w-full h-1 bg-slate-200 rounded-full appearance-none cursor-pointer accent-green-600"
+                />
+                <div className="flex justify-between mt-1 text-[10px] text-slate-400">
+                  <span>₹10K</span>
+                  <span>₹10Cr</span>
+                </div>
               </div>
-              <input
-                type="range"
-                min={10000}
-                max={100000000}
-                step={10000}
-                value={principal}
-                onChange={(e) => setPrincipal(Number(e.target.value))}
-                className="w-full h-1 bg-slate-200 rounded-full appearance-none cursor-pointer accent-green-600"
-              />
-              <div className="flex justify-between mt-1 text-[10px] text-slate-400">
-                <span>₹10K</span>
-                <span>₹10Cr</span>
+            ) : (
+              /* Target Maturity - Target mode */
+              <div>
+                <div className="flex justify-between items-baseline mb-2">
+                  <label className="text-sm font-medium text-slate-600">Target Maturity</label>
+                  <span className="font-mono text-base font-semibold text-green-600">
+                    ₹{formatIndianNumber(targetMaturity)}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={100000}
+                  max={100000000}
+                  step={100000}
+                  value={targetMaturity}
+                  onChange={(e) => setTargetMaturity(Number(e.target.value))}
+                  className="w-full h-1 bg-slate-200 rounded-full appearance-none cursor-pointer accent-green-600"
+                />
+                <div className="flex justify-between mt-1 text-[10px] text-slate-400">
+                  <span>₹1L</span>
+                  <span>₹10Cr</span>
+                </div>
+                {/* Quick target presets */}
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {[500000, 1000000, 2500000, 5000000, 10000000].map((amt) => (
+                    <button
+                      key={amt}
+                      onClick={() => setTargetMaturity(amt)}
+                      className={`px-2 py-1 text-[10px] rounded-full border transition-colors ${
+                        targetMaturity === amt
+                          ? 'bg-green-50 border-green-300 text-green-700'
+                          : 'border-slate-200 text-slate-500 hover:border-green-300'
+                      }`}
+                    >
+                      {formatCompact(amt).replace('₹', '')}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Interest Rate */}
             <div>
@@ -915,24 +1018,38 @@ const FDCalculator = forwardRef<FDCalculatorRef>(function FDCalculator(props, re
 
           {/* Results */}
           <div className="p-5 bg-slate-50">
-            {/* Primary Result */}
-            <div className="bg-green-50 rounded-lg p-4 text-center mb-4">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-green-600 mb-1">
-                Maturity Amount
+            {/* Primary Result - Mode dependent */}
+            {mode === 'calculate' ? (
+              <div className="bg-green-50 rounded-lg p-4 text-center mb-4">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-green-600 mb-1">
+                  Maturity Amount
+                </div>
+                <div className="font-mono text-3xl font-bold text-slate-900">
+                  ₹{formatIndianNumber(result.maturityAmount)}
+                </div>
               </div>
-              <div className="font-mono text-3xl font-bold text-slate-900">
-                ₹{formatIndianNumber(result.maturityAmount)}
+            ) : (
+              <div className="bg-green-50 rounded-lg p-4 text-center mb-4">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-green-600 mb-1">
+                  Required Deposit
+                </div>
+                <div className="font-mono text-3xl font-bold text-slate-900">
+                  ₹{formatIndianNumber(requiredPrincipal)}
+                </div>
+                <div className="text-xs text-slate-500 mt-1">
+                  to reach ₹{formatIndianNumber(targetMaturity)}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Secondary Results */}
             <div className="grid grid-cols-3 gap-2 mb-4">
               <div className="bg-white rounded-lg p-3 text-center">
                 <div className="text-[9px] uppercase tracking-wide text-slate-400 mb-0.5">
-                  Principal
+                  {mode === 'calculate' ? 'Principal' : 'Target'}
                 </div>
                 <div className="font-mono text-sm font-semibold text-slate-900">
-                  {formatCompact(principal)}
+                  {mode === 'calculate' ? formatCompact(principal) : formatCompact(targetMaturity)}
                 </div>
               </div>
               <div className="bg-white rounded-lg p-3 text-center">

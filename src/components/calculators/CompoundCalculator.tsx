@@ -179,6 +179,36 @@ function generateYearlyBreakdown(
   return breakdown
 }
 
+// Reverse calculation: Find required principal for target amount
+function calculateRequiredPrincipal(
+  targetAmount: number,
+  rate: number,
+  years: number,
+  frequency: CompoundingFrequency,
+  monthlyContribution: number = 0
+): number {
+  const n = getFrequencyPerYear(frequency)
+  const r = rate / 100
+  const compoundFactor = Math.pow(1 + r / n, n * years)
+
+  if (monthlyContribution > 0 && r > 0) {
+    // With monthly contributions, subtract the FV of contributions from target
+    const periodsPerMonth = n / 12
+    const contributionPerPeriod = monthlyContribution / periodsPerMonth
+    const futureValueContributions = contributionPerPeriod * ((compoundFactor - 1) / (r / n))
+    const remainingTarget = targetAmount - futureValueContributions
+    // Principal needed = remainingTarget / compoundFactor
+    return Math.max(0, Math.round(remainingTarget / compoundFactor))
+  } else if (monthlyContribution > 0 && r === 0) {
+    // No interest case with contributions
+    const totalContributions = monthlyContribution * 12 * years
+    return Math.max(0, Math.round(targetAmount - totalContributions))
+  }
+
+  // Simple case: P = A / (1 + r/n)^(n×t)
+  return Math.round(targetAmount / compoundFactor)
+}
+
 function compareFrequencies(
   principal: number,
   rate: number,
@@ -220,6 +250,8 @@ const CompoundCalculator = forwardRef<CompoundCalculatorRef>(function CompoundCa
   const [isLoaded, setIsLoaded] = useState(false)
   const [notes, setNotes] = useState('')
   const [showNotes, setShowNotes] = useState(false)
+  const [mode, setMode] = useState<'calculate' | 'target'>('calculate')
+  const [targetAmount, setTargetAmount] = useState(1000000)
   const calculatorRef = useRef<HTMLDivElement>(null)
 
   // Load from localStorage
@@ -234,6 +266,8 @@ const CompoundCalculator = forwardRef<CompoundCalculatorRef>(function CompoundCa
       setMonthlyContribution(data.monthlyContribution || 0)
       setShowContribution(data.monthlyContribution > 0)
       setNotes(data.notes || '')
+      setMode(data.mode || 'calculate')
+      setTargetAmount(data.targetAmount || 1000000)
     }
     setIsLoaded(true)
   }, [])
@@ -241,10 +275,10 @@ const CompoundCalculator = forwardRef<CompoundCalculatorRef>(function CompoundCa
   // Auto-save to localStorage (only after initial load)
   useEffect(() => {
     if (!isLoaded) return
-    const data = { principal, rate, years, frequency, monthlyContribution, notes }
+    const data = { principal, rate, years, frequency, monthlyContribution, notes, mode, targetAmount }
     localStorage.setItem('calc_compound', JSON.stringify(data))
     setLastSaved(new Date().toLocaleTimeString())
-  }, [principal, rate, years, frequency, monthlyContribution, notes, isLoaded])
+  }, [principal, rate, years, frequency, monthlyContribution, notes, mode, targetAmount, isLoaded])
 
   const result = useMemo(
     () => calculateCompoundInterest(principal, rate, years, frequency, monthlyContribution),
@@ -261,6 +295,27 @@ const CompoundCalculator = forwardRef<CompoundCalculatorRef>(function CompoundCa
     [principal, rate, years, monthlyContribution]
   )
 
+  // Reverse calculation for target mode
+  const requiredPrincipal = useMemo(
+    () => calculateRequiredPrincipal(targetAmount, rate, years, frequency, monthlyContribution),
+    [targetAmount, rate, years, frequency, monthlyContribution]
+  )
+
+  // Effective principal based on mode
+  const effectivePrincipal = mode === 'target' ? requiredPrincipal : principal
+
+  // Result based on effective principal (for target mode display)
+  const effectiveResult = useMemo(
+    () => calculateCompoundInterest(effectivePrincipal, rate, years, frequency, monthlyContribution),
+    [effectivePrincipal, rate, years, frequency, monthlyContribution]
+  )
+
+  // Effective yearly breakdown based on mode
+  const effectiveYearlyBreakdown = useMemo(
+    () => generateYearlyBreakdown(effectivePrincipal, rate, years, frequency, monthlyContribution),
+    [effectivePrincipal, rate, years, frequency, monthlyContribution]
+  )
+
   const handleClear = () => {
     setPrincipal(100000)
     setRate(12)
@@ -269,6 +324,8 @@ const CompoundCalculator = forwardRef<CompoundCalculatorRef>(function CompoundCa
     setMonthlyContribution(0)
     setShowContribution(false)
     setNotes('')
+    setMode('calculate')
+    setTargetAmount(1000000)
     localStorage.removeItem('calc_compound')
   }
 
@@ -791,28 +848,76 @@ const CompoundCalculator = forwardRef<CompoundCalculatorRef>(function CompoundCa
         <div className="grid md:grid-cols-2">
           {/* Inputs */}
           <div className="p-5 space-y-5 border-r border-slate-100">
-            {/* Principal Amount */}
-            <div>
-              <div className="flex justify-between items-baseline mb-2">
-                <label className="text-sm font-medium text-slate-600">Principal Amount</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  ₹{formatIndianNumber(principal)}
-                </span>
-              </div>
-              <input
-                type="range"
-                min={1000}
-                max={100000000}
-                step={1000}
-                value={principal}
-                onChange={(e) => setPrincipal(Number(e.target.value))}
-                className="w-full h-1 bg-slate-200 rounded-full appearance-none cursor-pointer accent-green-600"
-              />
-              <div className="flex justify-between mt-1 text-[10px] text-slate-400">
-                <span>₹1K</span>
-                <span>₹10Cr</span>
-              </div>
+            {/* Mode Toggle */}
+            <div className="flex rounded-lg bg-slate-100 p-1">
+              <button
+                onClick={() => setMode('calculate')}
+                className={`flex-1 py-2 px-3 text-xs font-medium rounded-md transition-all ${
+                  mode === 'calculate'
+                    ? 'bg-white text-green-700 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Calculate Maturity
+              </button>
+              <button
+                onClick={() => setMode('target')}
+                className={`flex-1 py-2 px-3 text-xs font-medium rounded-md transition-all ${
+                  mode === 'target'
+                    ? 'bg-white text-blue-700 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Plan for Target
+              </button>
             </div>
+
+            {/* Principal Amount or Target Amount based on mode */}
+            {mode === 'calculate' ? (
+              <div>
+                <div className="flex justify-between items-baseline mb-2">
+                  <label className="text-sm font-medium text-slate-600">Principal Amount</label>
+                  <span className="font-mono text-base font-semibold text-slate-900">
+                    ₹{formatIndianNumber(principal)}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={1000}
+                  max={100000000}
+                  step={1000}
+                  value={principal}
+                  onChange={(e) => setPrincipal(Number(e.target.value))}
+                  className="w-full h-1 bg-slate-200 rounded-full appearance-none cursor-pointer accent-green-600"
+                />
+                <div className="flex justify-between mt-1 text-[10px] text-slate-400">
+                  <span>₹1K</span>
+                  <span>₹10Cr</span>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div className="flex justify-between items-baseline mb-2">
+                  <label className="text-sm font-medium text-slate-600">Target Amount</label>
+                  <span className="font-mono text-base font-semibold text-blue-600">
+                    ₹{formatIndianNumber(targetAmount)}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={100000}
+                  max={100000000}
+                  step={100000}
+                  value={targetAmount}
+                  onChange={(e) => setTargetAmount(Number(e.target.value))}
+                  className="w-full h-1 bg-slate-200 rounded-full appearance-none cursor-pointer accent-blue-600"
+                />
+                <div className="flex justify-between mt-1 text-[10px] text-slate-400">
+                  <span>₹1L</span>
+                  <span>₹10Cr</span>
+                </div>
+              </div>
+            )}
 
             {/* Interest Rate */}
             <div>
@@ -931,24 +1036,38 @@ const CompoundCalculator = forwardRef<CompoundCalculatorRef>(function CompoundCa
 
           {/* Results */}
           <div className="p-5 bg-slate-50">
-            {/* Primary Result */}
-            <div className="bg-green-50 rounded-lg p-4 text-center mb-4">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-green-600 mb-1">
-                Final Amount
+            {/* Primary Result - Mode dependent */}
+            {mode === 'calculate' ? (
+              <div className="bg-green-50 rounded-lg p-4 text-center mb-4">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-green-600 mb-1">
+                  Final Amount
+                </div>
+                <div className="font-mono text-3xl font-bold text-slate-900">
+                  ₹{formatIndianNumber(result.finalAmount)}
+                </div>
               </div>
-              <div className="font-mono text-3xl font-bold text-slate-900">
-                ₹{formatIndianNumber(result.finalAmount)}
+            ) : (
+              <div className="bg-blue-50 rounded-lg p-4 text-center mb-4">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-blue-600 mb-1">
+                  Required Principal
+                </div>
+                <div className="font-mono text-3xl font-bold text-slate-900">
+                  ₹{formatIndianNumber(requiredPrincipal)}
+                </div>
+                <div className="text-xs text-slate-500 mt-1">
+                  to reach ₹{formatIndianNumber(targetAmount)}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Secondary Results */}
             <div className="grid grid-cols-2 gap-2 mb-4">
               <div className="bg-white rounded-lg p-3 text-center">
                 <div className="text-[9px] uppercase tracking-wide text-slate-400 mb-0.5">
-                  Principal
+                  {mode === 'calculate' ? 'Principal' : 'Target Amount'}
                 </div>
                 <div className="font-mono text-sm font-semibold text-slate-900">
-                  {formatCompact(result.principal)}
+                  {mode === 'calculate' ? formatCompact(result.principal) : formatCompact(targetAmount)}
                 </div>
               </div>
               <div className="bg-white rounded-lg p-3 text-center">
@@ -956,7 +1075,7 @@ const CompoundCalculator = forwardRef<CompoundCalculatorRef>(function CompoundCa
                   Total Interest
                 </div>
                 <div className="font-mono text-sm font-semibold text-slate-900">
-                  {formatCompact(result.totalInterest)}
+                  {mode === 'calculate' ? formatCompact(result.totalInterest) : formatCompact(effectiveResult.totalInterest)}
                 </div>
               </div>
               <div className="bg-white rounded-lg p-3 text-center">
@@ -964,7 +1083,7 @@ const CompoundCalculator = forwardRef<CompoundCalculatorRef>(function CompoundCa
                   Effective Rate
                 </div>
                 <div className="font-mono text-sm font-semibold text-slate-900">
-                  {result.effectiveRate}%
+                  {mode === 'calculate' ? result.effectiveRate : effectiveResult.effectiveRate}%
                 </div>
               </div>
               <div className="bg-white rounded-lg p-3 text-center">
@@ -972,7 +1091,7 @@ const CompoundCalculator = forwardRef<CompoundCalculatorRef>(function CompoundCa
                   Interest on Interest
                 </div>
                 <div className="font-mono text-sm font-semibold text-blue-600">
-                  {formatCompact(result.interestOnInterest)}
+                  {mode === 'calculate' ? formatCompact(result.interestOnInterest) : formatCompact(effectiveResult.interestOnInterest)}
                 </div>
               </div>
             </div>
@@ -996,7 +1115,7 @@ const CompoundCalculator = forwardRef<CompoundCalculatorRef>(function CompoundCa
                     fill="none"
                     stroke="#10b981"
                     strokeWidth="3"
-                    strokeDasharray={`${result.principalPercent} ${100 - result.principalPercent}`}
+                    strokeDasharray={`${mode === 'calculate' ? result.principalPercent : effectiveResult.principalPercent} ${100 - (mode === 'calculate' ? result.principalPercent : effectiveResult.principalPercent)}`}
                   />
                 </svg>
               </div>
@@ -1004,12 +1123,12 @@ const CompoundCalculator = forwardRef<CompoundCalculatorRef>(function CompoundCa
                 <div className="flex items-center gap-2 text-xs">
                   <span className="w-2 h-2 bg-green-500 rounded-sm" />
                   <span className="text-slate-600">Principal</span>
-                  <span className="ml-auto font-mono font-medium">{result.principalPercent}%</span>
+                  <span className="ml-auto font-mono font-medium">{mode === 'calculate' ? result.principalPercent : effectiveResult.principalPercent}%</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
                   <span className="w-2 h-2 bg-blue-500 rounded-sm" />
                   <span className="text-slate-600">Interest</span>
-                  <span className="ml-auto font-mono font-medium">{result.interestPercent}%</span>
+                  <span className="ml-auto font-mono font-medium">{mode === 'calculate' ? result.interestPercent : effectiveResult.interestPercent}%</span>
                 </div>
               </div>
             </div>
@@ -1070,8 +1189,9 @@ const CompoundCalculator = forwardRef<CompoundCalculatorRef>(function CompoundCa
 
           {/* Yearly bars */}
           <div className="space-y-2">
-            {yearlyBreakdown.map((year) => {
-              const maxBalance = Math.max(...yearlyBreakdown.map(y => y.closingBalance))
+            {(mode === 'calculate' ? yearlyBreakdown : effectiveYearlyBreakdown).map((year) => {
+              const chartData = mode === 'calculate' ? yearlyBreakdown : effectiveYearlyBreakdown
+              const maxBalance = Math.max(...chartData.map(y => y.closingBalance))
               const barWidth = maxBalance > 0 ? (year.closingBalance / maxBalance) * 100 : 0
               const principalRatio = year.closingBalance > 0
                 ? ((year.openingBalance + year.contributions) / year.closingBalance) * 100
@@ -1251,7 +1371,7 @@ const CompoundCalculator = forwardRef<CompoundCalculatorRef>(function CompoundCa
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {yearlyBreakdown.map((row) => (
+              {(mode === 'calculate' ? yearlyBreakdown : effectiveYearlyBreakdown).map((row) => (
                 <tr key={row.year} className="hover:bg-slate-50">
                   <td className="px-3 py-2 font-mono text-slate-600">Year {row.year}</td>
                   <td className="px-3 py-2 text-right text-slate-900 font-mono">

@@ -2,6 +2,14 @@
 
 import { useState, useMemo, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 
+interface TaxSlabBreakdown {
+  slab: string
+  range: string
+  rate: number
+  taxableAmount: number
+  tax: number
+}
+
 interface SalaryResult {
   grossSalary: number
   basicSalary: number
@@ -13,6 +21,10 @@ interface SalaryResult {
   netSalary: number
   annualCTC: number
   annualNet: number
+  taxableIncome: number
+  slabBreakdown: TaxSlabBreakdown[]
+  totalTaxBeforeCess: number
+  cess: number
 }
 
 function formatIndianNumber(num: number): string {
@@ -38,13 +50,88 @@ function formatCompact(num: number): string {
   return `₹${Math.round(num)}`
 }
 
+// Tax Regimes - FY 2024-25 (Static, as per Union Budget 2024)
+// Source: Income Tax Department, India - https://incometaxindia.gov.in
+type TaxRegime = 'new' | 'old'
+
+const TAX_SLABS = {
+  new: {
+    name: 'New Regime',
+    standardDeduction: 75000,
+    slabs: [
+      { min: 0, max: 300000, rate: 0, label: '0 - 3L', color: 'bg-emerald-500' },
+      { min: 300000, max: 700000, rate: 5, label: '3L - 7L', color: 'bg-lime-500' },
+      { min: 700000, max: 1000000, rate: 10, label: '7L - 10L', color: 'bg-yellow-500' },
+      { min: 1000000, max: 1200000, rate: 15, label: '10L - 12L', color: 'bg-amber-500' },
+      { min: 1200000, max: 1500000, rate: 20, label: '12L - 15L', color: 'bg-orange-500' },
+      { min: 1500000, max: Infinity, rate: 30, label: '15L+', color: 'bg-red-500' },
+    ],
+    benefits: ['Lower tax rates', '₹75K standard deduction', 'Simpler filing'],
+    limitations: ['No 80C/80D deductions', 'No HRA exemption', 'No LTA'],
+  },
+  old: {
+    name: 'Old Regime',
+    standardDeduction: 50000,
+    slabs: [
+      { min: 0, max: 250000, rate: 0, label: '0 - 2.5L', color: 'bg-emerald-500' },
+      { min: 250000, max: 500000, rate: 5, label: '2.5L - 5L', color: 'bg-lime-500' },
+      { min: 500000, max: 1000000, rate: 20, label: '5L - 10L', color: 'bg-amber-500' },
+      { min: 1000000, max: Infinity, rate: 30, label: '10L+', color: 'bg-red-500' },
+    ],
+    benefits: ['80C up to ₹1.5L', '80D health insurance', 'HRA exemption', 'LTA, NPS benefits'],
+    limitations: ['Higher base rates', 'Complex filing', 'More documentation'],
+  },
+}
+
+// Calculate tax with slab breakdown
+function calculateTaxWithBreakdown(
+  taxableIncome: number,
+  regime: TaxRegime
+): {
+  breakdown: TaxSlabBreakdown[]
+  totalTax: number
+  cess: number
+} {
+  const breakdown: TaxSlabBreakdown[] = []
+  let totalTax = 0
+  const slabs = TAX_SLABS[regime].slabs
+
+  for (const slab of slabs) {
+    if (taxableIncome <= slab.min) {
+      breakdown.push({
+        slab: slab.label,
+        range: `₹${formatCompact(slab.min)} - ${slab.max === Infinity ? '∞' : '₹' + formatCompact(slab.max)}`,
+        rate: slab.rate,
+        taxableAmount: 0,
+        tax: 0,
+      })
+    } else {
+      const amountInSlab = Math.min(taxableIncome, slab.max) - slab.min
+      const taxInSlab = amountInSlab * (slab.rate / 100)
+      totalTax += taxInSlab
+
+      breakdown.push({
+        slab: slab.label,
+        range: `₹${formatCompact(slab.min)} - ${slab.max === Infinity ? '∞' : '₹' + formatCompact(slab.max)}`,
+        rate: slab.rate,
+        taxableAmount: Math.round(amountInSlab),
+        tax: Math.round(taxInSlab),
+      })
+    }
+  }
+
+  const cess = totalTax * 0.04
+
+  return { breakdown, totalTax: Math.round(totalTax), cess: Math.round(cess) }
+}
+
 function calculateSalary(
   ctc: number,
   basicPercent: number,
   hraPercent: number,
   pfPercent: number,
   professionalTax: number,
-  estimatedTaxRate: number
+  regime: TaxRegime
 ): SalaryResult {
   const monthlyGross = ctc / 12
 
@@ -55,10 +142,14 @@ function calculateSalary(
   // Special allowance is the remainder
   const specialAllowance = monthlyGross - basicSalary - hra
 
-  // Estimated monthly income tax
-  const annualTaxableIncome = ctc - (pf * 12) - 50000 // Standard deduction
-  const annualTax = annualTaxableIncome * (estimatedTaxRate / 100)
-  const incomeTax = Math.max(0, annualTax / 12)
+  // Standard deduction based on regime
+  const standardDeduction = TAX_SLABS[regime].standardDeduction
+  const annualTaxableIncome = Math.max(0, ctc - (pf * 12) - standardDeduction)
+
+  // Calculate tax with slab breakdown
+  const { breakdown, totalTax, cess } = calculateTaxWithBreakdown(annualTaxableIncome, regime)
+  const annualTax = totalTax + cess
+  const incomeTax = annualTax / 12
 
   // Deductions
   const totalDeductions = pf + professionalTax + incomeTax
@@ -76,6 +167,10 @@ function calculateSalary(
     netSalary: Math.round(netSalary),
     annualCTC: ctc,
     annualNet: Math.round(netSalary * 12),
+    taxableIncome: Math.round(annualTaxableIncome),
+    slabBreakdown: breakdown,
+    totalTaxBeforeCess: totalTax,
+    cess: cess,
   }
 }
 
@@ -88,15 +183,18 @@ export interface SalaryCalculatorRef {
 
 const SalaryCalculator = forwardRef<SalaryCalculatorRef>(function SalaryCalculator(props, ref) {
   const [ctc, setCtc] = useState(1200000)
+  const [ctcInput, setCtcInput] = useState('12,00,000') // Raw input for editing
+  const [isCtcFocused, setIsCtcFocused] = useState(false)
   const [basicPercent, setBasicPercent] = useState(40)
   const [hraPercent, setHraPercent] = useState(50)
   const [pfPercent, setPfPercent] = useState(12)
   const [professionalTax, setProfessionalTax] = useState(200)
-  const [estimatedTaxRate, setEstimatedTaxRate] = useState(10)
+  const [taxRegime, setTaxRegime] = useState<TaxRegime>('new')
   const [lastSaved, setLastSaved] = useState<string | null>(null)
   const [isLoaded, setIsLoaded] = useState(false)
   const [notes, setNotes] = useState('')
   const [showNotes, setShowNotes] = useState(false)
+  const [showComparison, setShowComparison] = useState(false)
   const calculatorRef = useRef<HTMLDivElement>(null)
 
   // Load from localStorage
@@ -104,12 +202,14 @@ const SalaryCalculator = forwardRef<SalaryCalculatorRef>(function SalaryCalculat
     const saved = localStorage.getItem('calc_salary')
     if (saved) {
       const data = JSON.parse(saved)
-      setCtc(data.ctc || 1200000)
+      const loadedCtc = data.ctc || 1200000
+      setCtc(loadedCtc)
+      setCtcInput(loadedCtc.toString())
       setBasicPercent(data.basicPercent || 40)
       setHraPercent(data.hraPercent || 50)
       setPfPercent(data.pfPercent || 12)
       setProfessionalTax(data.professionalTax || 200)
-      setEstimatedTaxRate(data.estimatedTaxRate || 10)
+      setTaxRegime(data.taxRegime || 'new')
       setNotes(data.notes || '')
     }
     setIsLoaded(true)
@@ -118,26 +218,35 @@ const SalaryCalculator = forwardRef<SalaryCalculatorRef>(function SalaryCalculat
   // Auto-save to localStorage
   useEffect(() => {
     if (!isLoaded) return
-    const data = { ctc, basicPercent, hraPercent, pfPercent, professionalTax, estimatedTaxRate, notes }
+    const data = { ctc, basicPercent, hraPercent, pfPercent, professionalTax, taxRegime, notes }
     localStorage.setItem('calc_salary', JSON.stringify(data))
     setLastSaved(new Date().toLocaleTimeString())
-  }, [ctc, basicPercent, hraPercent, pfPercent, professionalTax, estimatedTaxRate, notes, isLoaded])
+  }, [ctc, basicPercent, hraPercent, pfPercent, professionalTax, taxRegime, notes, isLoaded])
 
   const handleClear = () => {
     setCtc(1200000)
+    setCtcInput('1200000')
     setBasicPercent(40)
     setHraPercent(50)
     setPfPercent(12)
     setProfessionalTax(200)
-    setEstimatedTaxRate(10)
+    setTaxRegime('new')
     setNotes('')
     localStorage.removeItem('calc_salary')
   }
 
   const result = useMemo(
-    () => calculateSalary(ctc, basicPercent, hraPercent, pfPercent, professionalTax, estimatedTaxRate),
-    [ctc, basicPercent, hraPercent, pfPercent, professionalTax, estimatedTaxRate]
+    () => calculateSalary(ctc, basicPercent, hraPercent, pfPercent, professionalTax, taxRegime),
+    [ctc, basicPercent, hraPercent, pfPercent, professionalTax, taxRegime]
   )
+
+  // Calculate comparison with other regime
+  const otherRegime = taxRegime === 'new' ? 'old' : 'new'
+  const otherResult = useMemo(
+    () => calculateSalary(ctc, basicPercent, hraPercent, pfPercent, professionalTax, otherRegime),
+    [ctc, basicPercent, hraPercent, pfPercent, professionalTax, otherRegime]
+  )
+  const taxSavings = otherResult.incomeTax * 12 - (result.totalTaxBeforeCess + result.cess)
 
   // Export functions
   const exportToExcel = () => {
@@ -316,22 +425,72 @@ const SalaryCalculator = forwardRef<SalaryCalculatorRef>(function SalaryCalculat
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Annual CTC</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  ₹{formatIndianNumber(ctc)}
-                </span>
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500">₹</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={isCtcFocused ? ctcInput : formatIndianNumber(ctc)}
+                    onChange={(e) => {
+                      setCtcInput(e.target.value)
+                      // Parse and update ctc in real-time
+                      const val = Number(e.target.value.replace(/,/g, ''))
+                      if (!isNaN(val) && val >= 0) {
+                        setCtc(Math.min(val, 100000000)) // Cap at 10Cr for sanity
+                      }
+                    }}
+                    onFocus={() => {
+                      setIsCtcFocused(true)
+                      setCtcInput(ctc.toString())
+                    }}
+                    onBlur={() => {
+                      setIsCtcFocused(false)
+                      // Clean up the input on blur
+                      const val = Number(ctcInput.replace(/,/g, ''))
+                      if (!isNaN(val) && val > 0) {
+                        setCtc(Math.min(val, 100000000))
+                      }
+                    }}
+                    className="font-mono text-base font-semibold text-slate-900 w-32 text-right bg-transparent border-b border-dashed border-slate-300 focus:border-orange-500 focus:outline-none"
+                    placeholder="e.g. 3800000"
+                  />
+                </div>
               </div>
               <input
                 type="range"
                 min={300000}
-                max={50000000}
+                max={20000000}
                 step={10000}
-                value={ctc}
-                onChange={(e) => setCtc(Number(e.target.value))}
+                value={Math.min(Math.max(ctc, 300000), 20000000)}
+                onChange={(e) => {
+                  const val = Number(e.target.value)
+                  setCtc(val)
+                  setCtcInput(val.toString())
+                }}
                 className="w-full h-1 bg-slate-200 rounded-full appearance-none cursor-pointer accent-orange-600"
               />
               <div className="flex justify-between mt-1 text-[10px] text-slate-400">
                 <span>₹3L</span>
-                <span>₹5Cr</span>
+                <span>₹2Cr</span>
+              </div>
+              {/* Quick CTC presets */}
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {[1000000, 1500000, 2000000, 3000000, 5000000].map((amount) => (
+                  <button
+                    key={amount}
+                    onClick={() => {
+                      setCtc(amount)
+                      setCtcInput(amount.toString())
+                    }}
+                    className={`px-2 py-1 text-[10px] rounded-full border transition-colors ${
+                      ctc === amount
+                        ? 'bg-orange-50 border-orange-300 text-orange-700'
+                        : 'border-slate-200 text-slate-500 hover:border-orange-300'
+                    }`}
+                  >
+                    {formatCompact(amount)}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -404,27 +563,43 @@ const SalaryCalculator = forwardRef<SalaryCalculatorRef>(function SalaryCalculat
               </div>
             </div>
 
-            {/* Estimated Tax Rate */}
-            <div>
-              <div className="flex justify-between items-baseline mb-2">
-                <label className="text-sm font-medium text-slate-600">Estimated Tax Rate</label>
-                <span className="font-mono text-sm font-semibold text-slate-900">
-                  {estimatedTaxRate}%
-                </span>
+            {/* Tax Regime Toggle */}
+            <div className="p-3 bg-gradient-to-r from-slate-50 to-slate-100 rounded-lg border border-slate-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-slate-600">Tax Regime</span>
+                <span className="text-[9px] px-1.5 py-0.5 bg-slate-200 text-slate-600 rounded">FY 2024-25</span>
               </div>
-              <input
-                type="range"
-                min={0}
-                max={30}
-                step={1}
-                value={estimatedTaxRate}
-                onChange={(e) => setEstimatedTaxRate(Number(e.target.value))}
-                className="w-full h-1 bg-slate-200 rounded-full appearance-none cursor-pointer accent-orange-600"
-              />
-              <div className="flex justify-between mt-1 text-[10px] text-slate-400">
-                <span>0%</span>
-                <span>30%</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setTaxRegime('new')}
+                  className={`flex-1 py-2 px-3 text-xs font-medium rounded-lg border-2 transition-all ${
+                    taxRegime === 'new'
+                      ? 'bg-blue-500 text-white border-blue-500 shadow-sm'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300'
+                  }`}
+                >
+                  New Regime
+                </button>
+                <button
+                  onClick={() => setTaxRegime('old')}
+                  className={`flex-1 py-2 px-3 text-xs font-medium rounded-lg border-2 transition-all ${
+                    taxRegime === 'old'
+                      ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-amber-300'
+                  }`}
+                >
+                  Old Regime
+                </button>
               </div>
+              {/* Regime comparison hint */}
+              {taxSavings !== 0 && (
+                <div className={`mt-2 text-[10px] ${taxSavings > 0 ? 'text-green-600' : 'text-amber-600'}`}>
+                  {taxSavings > 0
+                    ? `✓ Saving ₹${formatIndianNumber(Math.abs(taxSavings))}/year vs ${TAX_SLABS[otherRegime].name}`
+                    : `${TAX_SLABS[otherRegime].name} saves ₹${formatIndianNumber(Math.abs(taxSavings))}/year`
+                  }
+                </div>
+              )}
             </div>
           </div>
 
@@ -518,6 +693,280 @@ const SalaryCalculator = forwardRef<SalaryCalculatorRef>(function SalaryCalculat
               />
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Tax Slab Breakdown - Visual Design */}
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        {/* Header with Regime Info */}
+        <div className="px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-slate-700">Tax Breakdown</span>
+              <span className={`text-[9px] px-2 py-0.5 rounded-full font-medium ${
+                taxRegime === 'new' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
+              }`}>
+                {TAX_SLABS[taxRegime].name}
+              </span>
+            </div>
+            <span className="text-[10px] text-slate-400">FY 2024-25 • Union Budget 2024</span>
+          </div>
+        </div>
+
+        <div className="p-4 space-y-6">
+          {/* Taxable Income Summary */}
+          <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+            <div>
+              <div className="text-[10px] text-slate-500 uppercase tracking-wide">Taxable Income</div>
+              <div className="font-mono text-xl font-bold text-slate-800">₹{formatIndianNumber(result.taxableIncome)}</div>
+            </div>
+            <div className="text-right text-[10px] text-slate-500">
+              <div>CTC ₹{formatIndianNumber(result.annualCTC)}</div>
+              <div>- PF ₹{formatIndianNumber(result.pf * 12)} - Std. ₹{formatIndianNumber(TAX_SLABS[taxRegime].standardDeduction)}</div>
+            </div>
+          </div>
+
+          {/* ===== Compare Toggle at Top ===== */}
+          <div className="flex items-center justify-end">
+            <button
+              onClick={() => setShowComparison(!showComparison)}
+              className={`text-[10px] font-medium px-3 py-1.5 rounded-full border transition-colors ${
+                showComparison
+                  ? 'bg-slate-700 text-white border-slate-700'
+                  : 'bg-white text-slate-600 border-slate-300 hover:border-slate-400'
+              }`}
+            >
+              {showComparison ? 'Hide Comparison' : 'Compare Regimes'}
+            </button>
+          </div>
+
+          {/* ===== Tax Breakdown Visualization ===== */}
+          {(() => {
+            const otherRegimeKey = taxRegime === 'new' ? 'old' : 'new'
+            const otherResult = calculateSalary(ctc, basicPercent, hraPercent, pfPercent, professionalTax, otherRegimeKey)
+            const otherTax = otherResult.totalTaxBeforeCess + otherResult.cess
+            const otherEffectiveRate = otherResult.taxableIncome > 0
+              ? (otherTax / otherResult.taxableIncome * 100).toFixed(1)
+              : '0'
+            const currentTax = result.totalTaxBeforeCess + result.cess
+            const currentEffectiveRate = result.taxableIncome > 0
+              ? (currentTax / result.taxableIncome * 100).toFixed(1)
+              : '0'
+            const diff = otherTax - currentTax
+            const isBetter = diff > 0
+            const savings = Math.abs(diff)
+
+            return (
+              <>
+                {/* ===== Bar 1: Current Regime ===== */}
+                <div className="bg-slate-50 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`text-[10px] font-bold ${taxRegime === 'new' ? 'text-blue-700' : 'text-amber-700'}`}>
+                      {taxRegime === 'new' ? 'NEW REGIME' : 'OLD REGIME'}
+                    </span>
+                    <span className={`text-[8px] px-2 py-0.5 rounded-full ${
+                      taxRegime === 'new' ? 'bg-blue-500 text-white' : 'bg-amber-500 text-white'
+                    }`}>
+                      Selected
+                    </span>
+                  </div>
+
+                  {/* The main segmented bar */}
+                  <div className="h-12 flex rounded-lg overflow-hidden shadow-inner border border-slate-200">
+                    {TAX_SLABS[taxRegime].slabs.map((slab, index) => {
+                      const slabData = result.slabBreakdown[index]
+                      const percentage = result.taxableIncome > 0
+                        ? (slabData.taxableAmount / result.taxableIncome) * 100
+                        : 0
+                      if (percentage === 0) return null
+                      return (
+                        <div
+                          key={index}
+                          className={`${slab.color} flex flex-col items-center justify-center transition-all relative group`}
+                          style={{ width: `${percentage}%` }}
+                        >
+                          <span className="text-[10px] font-bold text-white drop-shadow">{slab.label}</span>
+                          <span className="text-[8px] text-white/80">{formatCompact(slabData.taxableAmount)}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Labels below the bar */}
+                  <div className="flex mt-2">
+                    {TAX_SLABS[taxRegime].slabs.map((slab, index) => {
+                      const slabData = result.slabBreakdown[index]
+                      const percentage = result.taxableIncome > 0
+                        ? (slabData.taxableAmount / result.taxableIncome) * 100
+                        : 0
+                      if (percentage === 0) return null
+                      return (
+                        <div
+                          key={index}
+                          className="flex flex-col items-center justify-start text-center"
+                          style={{ width: `${percentage}%` }}
+                        >
+                          <div className={`text-[9px] font-medium ${slab.rate === 0 ? 'text-emerald-600' : 'text-slate-600'}`}>
+                            {slab.rate}%
+                          </div>
+                          <div className={`text-[10px] font-bold ${slab.rate === 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+                            ₹{formatIndianNumber(slabData.tax)}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Tax breakdown note */}
+                  <div className="text-[9px] text-slate-400 mt-2 pt-2 border-t border-slate-200">
+                    Tax ₹{formatIndianNumber(result.totalTaxBeforeCess)} + 4% Cess ₹{formatIndianNumber(result.cess)}
+                  </div>
+                </div>
+
+                {/* ===== Stats Boxes (Between Bars) ===== */}
+                <div className={`flex ${showComparison ? 'justify-between' : 'justify-start'} gap-4`}>
+                  {/* Current regime stats - left aligned */}
+                  <div className={`rounded-r-xl border-r-4 ${
+                    taxRegime === 'new' ? 'border-r-blue-500 bg-blue-50' : 'border-r-amber-500 bg-amber-50'
+                  } p-3 space-y-2 min-w-[140px]`}>
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-[9px] text-slate-500">Total Tax</span>
+                      <span className="text-[11px] font-bold text-slate-700">₹{formatIndianNumber(currentTax)}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-[9px] text-slate-500">Eff. Rate</span>
+                      <span className={`text-[11px] font-bold ${taxRegime === 'new' ? 'text-blue-600' : 'text-amber-600'}`}>
+                        {currentEffectiveRate}%
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-[9px] text-slate-500">Take Home</span>
+                      <span className="text-[11px] font-bold text-emerald-600">₹{formatIndianNumber(result.netSalary)}</span>
+                    </div>
+                  </div>
+
+                  {/* Alternative regime stats - right aligned (only when comparison is on) */}
+                  {showComparison && (
+                    <div className={`rounded-l-xl border-l-4 ${
+                      otherRegimeKey === 'new' ? 'border-l-blue-400 bg-blue-50' : 'border-l-amber-400 bg-amber-50'
+                    } p-3 space-y-2 min-w-[140px]`}>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-[9px] text-slate-500">Total Tax</span>
+                        <span className="text-[11px] font-bold text-slate-700">₹{formatIndianNumber(otherTax)}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-[9px] text-slate-500">Eff. Rate</span>
+                        <span className={`text-[11px] font-bold ${otherRegimeKey === 'new' ? 'text-blue-600' : 'text-amber-600'}`}>
+                          {otherEffectiveRate}%
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-[9px] text-slate-500">Take Home</span>
+                        <span className="text-[11px] font-bold text-emerald-600">₹{formatIndianNumber(otherResult.netSalary)}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* ===== Bar 2: Alternative Regime (only when comparison is on) ===== */}
+                {showComparison && (
+                  <>
+                    <div className={`rounded-xl p-4 ${otherRegimeKey === 'new' ? 'bg-blue-50/50' : 'bg-amber-50/50'}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`text-[10px] font-bold ${otherRegimeKey === 'new' ? 'text-blue-700' : 'text-amber-700'}`}>
+                          {otherRegimeKey === 'new' ? 'NEW REGIME' : 'OLD REGIME'}
+                        </span>
+                        <span className={`text-[8px] px-2 py-0.5 rounded-full ${
+                          otherRegimeKey === 'new' ? 'bg-blue-100 text-blue-600' : 'bg-amber-100 text-amber-600'
+                        }`}>
+                          Alternative
+                        </span>
+                      </div>
+
+                      {/* Full bar */}
+                      <div className="h-12 flex rounded-lg overflow-hidden shadow-inner border border-slate-200">
+                        {TAX_SLABS[otherRegimeKey].slabs.map((slab, index) => {
+                          const slabData = otherResult.slabBreakdown[index]
+                          const percentage = otherResult.taxableIncome > 0
+                            ? (slabData.taxableAmount / otherResult.taxableIncome) * 100
+                            : 0
+                          if (percentage === 0) return null
+                          return (
+                            <div
+                              key={index}
+                              className={`${slab.color} flex flex-col items-center justify-center`}
+                              style={{ width: `${percentage}%` }}
+                            >
+                              <span className="text-[10px] font-bold text-white drop-shadow">{slab.label}</span>
+                              <span className="text-[8px] text-white/80">{formatCompact(slabData.taxableAmount)}</span>
+                            </div>
+                          )
+                        })}
+                      </div>
+
+                      {/* Labels below the bar */}
+                      <div className="flex mt-2">
+                        {TAX_SLABS[otherRegimeKey].slabs.map((slab, index) => {
+                          const slabData = otherResult.slabBreakdown[index]
+                          const percentage = otherResult.taxableIncome > 0
+                            ? (slabData.taxableAmount / otherResult.taxableIncome) * 100
+                            : 0
+                          if (percentage === 0) return null
+                          return (
+                            <div
+                              key={index}
+                              className="flex flex-col items-center justify-start text-center"
+                              style={{ width: `${percentage}%` }}
+                            >
+                              <div className={`text-[9px] font-medium ${slab.rate === 0 ? 'text-emerald-600' : 'text-slate-600'}`}>
+                                {slab.rate}%
+                              </div>
+                              <div className={`text-[10px] font-bold ${slab.rate === 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+                                ₹{formatIndianNumber(slabData.tax)}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+
+                      {/* Tax breakdown note */}
+                      <div className="text-[9px] text-slate-400 mt-2 pt-2 border-t border-slate-200">
+                        Tax ₹{formatIndianNumber(otherResult.totalTaxBeforeCess)} + 4% Cess ₹{formatIndianNumber(otherResult.cess)}
+                      </div>
+                    </div>
+
+                    {/* Savings indicator */}
+                    {savings > 0 && (
+                      <div className={`flex items-center justify-center gap-2 p-3 rounded-lg ${
+                        isBetter
+                          ? (taxRegime === 'new' ? 'bg-blue-100' : 'bg-amber-100')
+                          : (otherRegimeKey === 'new' ? 'bg-blue-100' : 'bg-amber-100')
+                      }`}>
+                        <span className="text-lg">{isBetter ? '✓' : '💡'}</span>
+                        <span className={`text-xs font-medium ${
+                          isBetter
+                            ? (taxRegime === 'new' ? 'text-blue-700' : 'text-amber-700')
+                            : (otherRegimeKey === 'new' ? 'text-blue-700' : 'text-amber-700')
+                        }`}>
+                          {isBetter ? (
+                            <>
+                              <strong>{taxRegime === 'new' ? 'New Regime' : 'Old Regime'}</strong> (current) saves you{' '}
+                              <span className="font-bold">₹{formatIndianNumber(savings)}/year</span>
+                            </>
+                          ) : (
+                            <>
+                              Switch to <strong>{otherRegimeKey === 'new' ? 'New Regime' : 'Old Regime'}</strong> to save{' '}
+                          <span className="font-bold">₹{formatIndianNumber(savings)}/year</span>
+                            </>
+                          )}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
+            )
+          })()}
         </div>
       </div>
 

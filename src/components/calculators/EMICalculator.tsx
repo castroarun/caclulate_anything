@@ -218,8 +218,23 @@ export interface EMICalculatorRef {
   handleClear: () => void
 }
 
+// Calculate max loan from EMI budget (reverse calculation)
+function calculateAffordability(emi: number, rate: number, tenure: number): number {
+  const monthlyRate = rate / 12 / 100
+  const months = tenure * 12
+
+  if (monthlyRate === 0) {
+    return emi * months
+  }
+
+  const principal = emi * (Math.pow(1 + monthlyRate, months) - 1) / (monthlyRate * Math.pow(1 + monthlyRate, months))
+  return Math.round(principal)
+}
+
 const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props, ref) {
+  const [mode, setMode] = useState<'calculate' | 'affordability'>('calculate')
   const [principal, setPrincipal] = useState(5000000)
+  const [emiBudget, setEmiBudget] = useState(50000) // For affordability mode
   const [rate, setRate] = useState(8.5)
   const [tenure, setTenure] = useState(20)
   const [lastSaved, setLastSaved] = useState<string | null>(null)
@@ -260,7 +275,9 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
     const saved = localStorage.getItem('calc_emi')
     if (saved) {
       const data = JSON.parse(saved)
+      setMode(data.mode || 'calculate')
       setPrincipal(data.principal || 5000000)
+      setEmiBudget(data.emiBudget || 50000)
       setRate(data.rate || 8.5)
       setTenure(data.tenure || 20)
       setNotes(data.notes || '')
@@ -271,16 +288,24 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
   // Auto-save to localStorage (only after initial load)
   useEffect(() => {
     if (!isLoaded) return
-    const data = { principal, rate, tenure, notes }
+    const data = { mode, principal, emiBudget, rate, tenure, notes }
     localStorage.setItem('calc_emi', JSON.stringify(data))
     setLastSaved(new Date().toLocaleTimeString())
-  }, [principal, rate, tenure, notes, isLoaded])
+  }, [mode, principal, emiBudget, rate, tenure, notes, isLoaded])
 
-  const result = useMemo(() => calculateEMI(principal, rate, tenure), [principal, rate, tenure])
+  // Calculate max affordable loan in affordability mode
+  const affordableLoan = useMemo(
+    () => calculateAffordability(emiBudget, rate, tenure),
+    [emiBudget, rate, tenure]
+  )
+
+  // Use affordableLoan as principal in affordability mode for result calculation
+  const effectivePrincipal = mode === 'affordability' ? affordableLoan : principal
+  const result = useMemo(() => calculateEMI(effectivePrincipal, rate, tenure), [effectivePrincipal, rate, tenure])
 
   const { schedule, yearlyBreakdown } = useMemo(
-    () => generateAmortization(principal, rate, tenure, result.emi),
-    [principal, rate, tenure, result.emi]
+    () => generateAmortization(effectivePrincipal, rate, tenure, result.emi),
+    [effectivePrincipal, rate, tenure, result.emi]
   )
 
   // Prepayment calculation
@@ -297,7 +322,9 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
   )
 
   const handleClear = () => {
+    setMode('calculate')
     setPrincipal(5000000)
+    setEmiBudget(50000)
     setRate(8.5)
     setTenure(20)
     setNotes('')
@@ -797,31 +824,103 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
     <div className="space-y-4" ref={calculatorRef}>
       {/* Main Calculator Card */}
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        {/* Mode Toggle */}
+        <div className="p-3 border-b border-slate-100 bg-slate-50">
+          <div className="flex rounded-lg bg-slate-200 p-0.5">
+            <button
+              onClick={() => setMode('calculate')}
+              className={`flex-1 px-4 py-2 text-xs font-medium rounded-md transition-all ${
+                mode === 'calculate'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Calculate EMI
+            </button>
+            <button
+              onClick={() => setMode('affordability')}
+              className={`flex-1 px-4 py-2 text-xs font-medium rounded-md transition-all ${
+                mode === 'affordability'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Affordability
+            </button>
+          </div>
+          <p className="text-[10px] text-slate-500 text-center mt-2">
+            {mode === 'calculate'
+              ? 'Calculate EMI for a given loan amount'
+              : 'Find how much loan you can afford for your EMI budget'}
+          </p>
+        </div>
+
         <div className="grid md:grid-cols-2">
           {/* Inputs */}
           <div className="p-5 space-y-5 border-r border-slate-100">
-            {/* Loan Amount */}
-            <div>
-              <div className="flex justify-between items-baseline mb-2">
-                <label className="text-sm font-medium text-slate-600">Loan Amount</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  ₹{formatIndianNumber(principal)}
-                </span>
+            {mode === 'calculate' ? (
+              /* Loan Amount - Calculate mode */
+              <div>
+                <div className="flex justify-between items-baseline mb-2">
+                  <label className="text-sm font-medium text-slate-600">Loan Amount</label>
+                  <span className="font-mono text-base font-semibold text-slate-900">
+                    ₹{formatIndianNumber(principal)}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={100000}
+                  max={100000000}
+                  step={100000}
+                  value={principal}
+                  onChange={(e) => setPrincipal(Number(e.target.value))}
+                  className="w-full h-1 bg-slate-200 rounded-full appearance-none cursor-pointer accent-blue-600"
+                />
+                <div className="flex justify-between mt-1 text-[10px] text-slate-400">
+                  <span>₹1L</span>
+                  <span>₹10Cr</span>
+                </div>
               </div>
-              <input
-                type="range"
-                min={100000}
-                max={100000000}
-                step={100000}
-                value={principal}
-                onChange={(e) => setPrincipal(Number(e.target.value))}
-                className="w-full h-1 bg-slate-200 rounded-full appearance-none cursor-pointer accent-blue-600"
-              />
-              <div className="flex justify-between mt-1 text-[10px] text-slate-400">
-                <span>₹1L</span>
-                <span>₹10Cr</span>
+            ) : (
+              /* EMI Budget - Affordability mode */
+              <div>
+                <div className="flex justify-between items-baseline mb-2">
+                  <label className="text-sm font-medium text-slate-600">Monthly EMI Budget</label>
+                  <span className="font-mono text-base font-semibold text-blue-600">
+                    ₹{formatIndianNumber(emiBudget)}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={5000}
+                  max={500000}
+                  step={1000}
+                  value={emiBudget}
+                  onChange={(e) => setEmiBudget(Number(e.target.value))}
+                  className="w-full h-1 bg-slate-200 rounded-full appearance-none cursor-pointer accent-blue-600"
+                />
+                <div className="flex justify-between mt-1 text-[10px] text-slate-400">
+                  <span>₹5K</span>
+                  <span>₹5L</span>
+                </div>
+                {/* Quick EMI presets */}
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {[25000, 50000, 75000, 100000, 150000].map((emi) => (
+                    <button
+                      key={emi}
+                      onClick={() => setEmiBudget(emi)}
+                      className={`px-2 py-1 text-[10px] rounded-full border transition-colors ${
+                        emiBudget === emi
+                          ? 'bg-blue-50 border-blue-300 text-blue-700'
+                          : 'border-slate-200 text-slate-500 hover:border-blue-300'
+                      }`}
+                    >
+                      ₹{(emi / 1000)}K
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Interest Rate */}
             <div>
@@ -834,7 +933,7 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
               <input
                 type="range"
                 min={5}
-                max={15}
+                max={18}
                 step={0.1}
                 value={rate}
                 onChange={(e) => setRate(Number(e.target.value))}
@@ -842,7 +941,44 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
               />
               <div className="flex justify-between mt-1 text-[10px] text-slate-400">
                 <span>5%</span>
-                <span>15%</span>
+                <span>18%</span>
+              </div>
+              {/* Loan type presets */}
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {[
+                  { label: 'Home', rate: 8.5, tenure: 20 },
+                  { label: 'Car', rate: 9.0, tenure: 5 },
+                  { label: 'Personal', rate: 12.0, tenure: 3 },
+                  { label: 'Gold', rate: 8.0, tenure: 1 },
+                ].map((preset) => (
+                  <button
+                    key={preset.label}
+                    onClick={() => { setRate(preset.rate); setTenure(preset.tenure); }}
+                    className={`px-2 py-1 text-[10px] rounded-full border transition-colors ${
+                      rate === preset.rate && tenure === preset.tenure
+                        ? 'bg-blue-50 border-blue-300 text-blue-700'
+                        : 'border-slate-200 text-slate-500 hover:border-blue-300'
+                    }`}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+              {/* Quick rate buttons */}
+              <div className="flex gap-1 mt-1.5">
+                {[7, 8, 9, 10, 11, 12].map((r) => (
+                  <button
+                    key={r}
+                    onClick={() => setRate(r)}
+                    className={`flex-1 py-0.5 text-[9px] rounded transition-colors ${
+                      Math.floor(rate) === r
+                        ? 'bg-slate-200 text-slate-700 font-medium'
+                        : 'text-slate-400 hover:bg-slate-100'
+                    }`}
+                  >
+                    {r}%
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -872,24 +1008,38 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
 
           {/* Results */}
           <div className="p-5 bg-slate-50">
-            {/* Primary Result */}
-            <div className="bg-green-50 rounded-lg p-4 text-center mb-4">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-green-600 mb-1">
-                Monthly EMI
+            {/* Primary Result - Mode dependent */}
+            {mode === 'calculate' ? (
+              <div className="bg-green-50 rounded-lg p-4 text-center mb-4">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-green-600 mb-1">
+                  Monthly EMI
+                </div>
+                <div className="font-mono text-3xl font-bold text-slate-900">
+                  ₹{formatIndianNumber(result.emi)}
+                </div>
               </div>
-              <div className="font-mono text-3xl font-bold text-slate-900">
-                ₹{formatIndianNumber(result.emi)}
+            ) : (
+              <div className="bg-blue-50 rounded-lg p-4 text-center mb-4">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-blue-600 mb-1">
+                  Maximum Loan You Can Afford
+                </div>
+                <div className="font-mono text-3xl font-bold text-slate-900">
+                  ₹{formatIndianNumber(affordableLoan)}
+                </div>
+                <div className="text-xs text-slate-500 mt-1">
+                  at ₹{formatIndianNumber(emiBudget)}/month EMI
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Secondary Results */}
             <div className="grid grid-cols-3 gap-2 mb-4">
               <div className="bg-white rounded-lg p-3 text-center">
                 <div className="text-[9px] uppercase tracking-wide text-slate-400 mb-0.5">
-                  Principal
+                  {mode === 'calculate' ? 'Principal' : 'EMI Budget'}
                 </div>
                 <div className="font-mono text-sm font-semibold text-slate-900">
-                  {formatCompact(principal)}
+                  {mode === 'calculate' ? formatCompact(principal) : formatCompact(emiBudget)}
                 </div>
               </div>
               <div className="bg-white rounded-lg p-3 text-center">
@@ -1308,25 +1458,12 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-slate-700">Amortization Schedule</h3>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={exportToExcel}
-              className="text-[10px] text-slate-500 hover:text-green-600 font-medium flex items-center gap-1"
-              title="Download as Excel/CSV"
-            >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              CSV
-            </button>
-            <span className="text-slate-300">|</span>
-            <button
-              onClick={() => setShowFullSchedule(!showFullSchedule)}
-              className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-            >
-              {showFullSchedule ? 'Show Less' : `Show All ${schedule.length} Months`}
-            </button>
-          </div>
+          <button
+            onClick={() => setShowFullSchedule(!showFullSchedule)}
+            className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+          >
+            {showFullSchedule ? 'Show Less' : `Show All ${schedule.length} Months`}
+          </button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">

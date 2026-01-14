@@ -68,8 +68,10 @@ export interface CAGRCalculatorRef {
 }
 
 const CAGRCalculator = forwardRef<CAGRCalculatorRef>(function CAGRCalculator(props, ref) {
+  const [mode, setMode] = useState<'find' | 'project'>('find') // find CAGR or project growth
   const [initialValue, setInitialValue] = useState(100000)
   const [finalValue, setFinalValue] = useState(250000)
+  const [targetCagr, setTargetCagr] = useState(12) // For project mode
   const [years, setYears] = useState(5)
   const [lastSaved, setLastSaved] = useState<string | null>(null)
   const [isLoaded, setIsLoaded] = useState(false)
@@ -82,8 +84,10 @@ const CAGRCalculator = forwardRef<CAGRCalculatorRef>(function CAGRCalculator(pro
     const saved = localStorage.getItem('calc_cagr')
     if (saved) {
       const data = JSON.parse(saved)
+      setMode(data.mode || 'find')
       setInitialValue(data.initialValue || 100000)
       setFinalValue(data.finalValue || 250000)
+      setTargetCagr(data.targetCagr || 12)
       setYears(data.years || 5)
       setNotes(data.notes || '')
     }
@@ -93,27 +97,34 @@ const CAGRCalculator = forwardRef<CAGRCalculatorRef>(function CAGRCalculator(pro
   // Auto-save to localStorage
   useEffect(() => {
     if (!isLoaded) return
-    const data = { initialValue, finalValue, years, notes }
+    const data = { mode, initialValue, finalValue, targetCagr, years, notes }
     localStorage.setItem('calc_cagr', JSON.stringify(data))
     setLastSaved(new Date().toLocaleTimeString())
-  }, [initialValue, finalValue, years, notes, isLoaded])
+  }, [mode, initialValue, finalValue, targetCagr, years, notes, isLoaded])
 
   const handleClear = () => {
+    setMode('find')
     setInitialValue(100000)
     setFinalValue(250000)
+    setTargetCagr(12)
     setYears(5)
     setNotes('')
     localStorage.removeItem('calc_cagr')
   }
 
+  // Calculate projected final value for project mode
+  const projectedFinalValue = useMemo(() => {
+    return Math.round(initialValue * Math.pow(1 + targetCagr / 100, years))
+  }, [initialValue, targetCagr, years])
+
   const result = useMemo(
-    () => calculateCAGR(initialValue, finalValue, years),
-    [initialValue, finalValue, years]
+    () => calculateCAGR(initialValue, mode === 'find' ? finalValue : projectedFinalValue, years),
+    [initialValue, finalValue, projectedFinalValue, years, mode]
   )
 
   const projections = useMemo(
-    () => generateProjections(initialValue, result.cagr, years),
-    [initialValue, result.cagr, years]
+    () => generateProjections(initialValue, mode === 'find' ? result.cagr : targetCagr, years),
+    [initialValue, result.cagr, targetCagr, years, mode]
   )
 
   // Export functions
@@ -318,6 +329,37 @@ const CAGRCalculator = forwardRef<CAGRCalculatorRef>(function CAGRCalculator(pro
     <div className="space-y-4" ref={calculatorRef}>
       {/* Main Calculator Card */}
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        {/* Mode Toggle */}
+        <div className="p-3 border-b border-slate-100 bg-slate-50">
+          <div className="flex rounded-lg bg-slate-200 p-0.5">
+            <button
+              onClick={() => setMode('find')}
+              className={`flex-1 px-4 py-2 text-xs font-medium rounded-md transition-all ${
+                mode === 'find'
+                  ? 'bg-white text-emerald-600 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Find CAGR
+            </button>
+            <button
+              onClick={() => setMode('project')}
+              className={`flex-1 px-4 py-2 text-xs font-medium rounded-md transition-all ${
+                mode === 'project'
+                  ? 'bg-white text-emerald-600 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Project Growth
+            </button>
+          </div>
+          <p className="text-[10px] text-slate-500 text-center mt-2">
+            {mode === 'find'
+              ? 'Calculate CAGR from initial & final values'
+              : 'Project future value at a given CAGR'}
+          </p>
+        </div>
+
         <div className="grid md:grid-cols-2">
           {/* Inputs */}
           <div className="p-5 space-y-5 border-r border-slate-100">
@@ -344,28 +386,69 @@ const CAGRCalculator = forwardRef<CAGRCalculatorRef>(function CAGRCalculator(pro
               </div>
             </div>
 
-            {/* Final Value */}
-            <div>
-              <div className="flex justify-between items-baseline mb-2">
-                <label className="text-sm font-medium text-slate-600">Final Value</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  ₹{formatIndianNumber(finalValue)}
-                </span>
+            {mode === 'find' ? (
+              /* Final Value - only in Find mode */
+              <div>
+                <div className="flex justify-between items-baseline mb-2">
+                  <label className="text-sm font-medium text-slate-600">Final Value</label>
+                  <span className="font-mono text-base font-semibold text-slate-900">
+                    ₹{formatIndianNumber(finalValue)}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={1000}
+                  max={100000000}
+                  step={1000}
+                  value={finalValue}
+                  onChange={(e) => setFinalValue(Number(e.target.value))}
+                  className="w-full h-1 bg-slate-200 rounded-full appearance-none cursor-pointer accent-emerald-600"
+                />
+                <div className="flex justify-between mt-1 text-[10px] text-slate-400">
+                  <span>₹1K</span>
+                  <span>₹10Cr</span>
+                </div>
               </div>
-              <input
-                type="range"
-                min={1000}
-                max={100000000}
-                step={1000}
-                value={finalValue}
-                onChange={(e) => setFinalValue(Number(e.target.value))}
-                className="w-full h-1 bg-slate-200 rounded-full appearance-none cursor-pointer accent-emerald-600"
-              />
-              <div className="flex justify-between mt-1 text-[10px] text-slate-400">
-                <span>₹1K</span>
-                <span>₹10Cr</span>
+            ) : (
+              /* Target CAGR - only in Project mode */
+              <div>
+                <div className="flex justify-between items-baseline mb-2">
+                  <label className="text-sm font-medium text-slate-600">Expected CAGR</label>
+                  <span className="font-mono text-base font-semibold text-emerald-600">
+                    {targetCagr}% p.a.
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={1}
+                  max={50}
+                  step={0.5}
+                  value={targetCagr}
+                  onChange={(e) => setTargetCagr(Number(e.target.value))}
+                  className="w-full h-1 bg-slate-200 rounded-full appearance-none cursor-pointer accent-emerald-600"
+                />
+                <div className="flex justify-between mt-1 text-[10px] text-slate-400">
+                  <span>1%</span>
+                  <span>50%</span>
+                </div>
+                {/* Quick CAGR presets */}
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {[8, 10, 12, 15, 20].map((rate) => (
+                    <button
+                      key={rate}
+                      onClick={() => setTargetCagr(rate)}
+                      className={`px-2 py-1 text-[10px] rounded-full border transition-colors ${
+                        targetCagr === rate
+                          ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                          : 'border-slate-200 text-slate-500 hover:border-emerald-300'
+                      }`}
+                    >
+                      {rate}%
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Time Period */}
             <div>
@@ -393,46 +476,91 @@ const CAGRCalculator = forwardRef<CAGRCalculatorRef>(function CAGRCalculator(pro
 
           {/* Results */}
           <div className="p-5 bg-slate-50">
-            {/* Primary Result - CAGR */}
-            <div className={`${isPositiveReturn ? 'bg-emerald-50' : 'bg-red-50'} rounded-lg p-4 text-center mb-4`}>
-              <div className={`text-[10px] font-semibold uppercase tracking-wider ${isPositiveReturn ? 'text-emerald-600' : 'text-red-600'} mb-1`}>
-                Compound Annual Growth Rate
-              </div>
-              <div className="font-mono text-4xl font-bold text-slate-900">
-                {isPositiveReturn ? '+' : ''}{result.cagr}%
-              </div>
-              <div className="text-xs text-slate-500 mt-1">
-                per year, compounded annually
-              </div>
-            </div>
+            {mode === 'find' ? (
+              /* Find Mode Results - Show CAGR */
+              <>
+                <div className={`${isPositiveReturn ? 'bg-emerald-50' : 'bg-red-50'} rounded-lg p-4 text-center mb-4`}>
+                  <div className={`text-[10px] font-semibold uppercase tracking-wider ${isPositiveReturn ? 'text-emerald-600' : 'text-red-600'} mb-1`}>
+                    Compound Annual Growth Rate
+                  </div>
+                  <div className="font-mono text-4xl font-bold text-slate-900">
+                    {isPositiveReturn ? '+' : ''}{result.cagr}%
+                  </div>
+                  <div className="text-xs text-slate-500 mt-1">
+                    per year, compounded annually
+                  </div>
+                </div>
 
-            {/* Secondary Results */}
-            <div className="grid grid-cols-3 gap-2 mb-4">
-              <div className="bg-white rounded-lg p-3 text-center">
-                <div className="text-[9px] uppercase tracking-wide text-slate-400 mb-0.5">
-                  Total Return
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                  <div className="bg-white rounded-lg p-3 text-center">
+                    <div className="text-[9px] uppercase tracking-wide text-slate-400 mb-0.5">
+                      Total Return
+                    </div>
+                    <div className={`font-mono text-sm font-semibold ${isPositiveReturn ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {formatCompact(result.totalReturn)}
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 text-center">
+                    <div className="text-[9px] uppercase tracking-wide text-slate-400 mb-0.5">
+                      Return %
+                    </div>
+                    <div className={`font-mono text-sm font-semibold ${isPositiveReturn ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {isPositiveReturn ? '+' : ''}{result.totalReturnPercent}%
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 text-center">
+                    <div className="text-[9px] uppercase tracking-wide text-slate-400 mb-0.5">
+                      Multiplier
+                    </div>
+                    <div className="font-mono text-sm font-semibold text-slate-900">
+                      {(finalValue / initialValue).toFixed(2)}x
+                    </div>
+                  </div>
                 </div>
-                <div className={`font-mono text-sm font-semibold ${isPositiveReturn ? 'text-emerald-600' : 'text-red-600'}`}>
-                  {formatCompact(result.totalReturn)}
+              </>
+            ) : (
+              /* Project Mode Results - Show Future Value */
+              <>
+                <div className="bg-emerald-50 rounded-lg p-4 text-center mb-4">
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 mb-1">
+                    Projected Value in {years} Years
+                  </div>
+                  <div className="font-mono text-4xl font-bold text-slate-900">
+                    ₹{formatIndianNumber(projectedFinalValue)}
+                  </div>
+                  <div className="text-xs text-slate-500 mt-1">
+                    at {targetCagr}% CAGR
+                  </div>
                 </div>
-              </div>
-              <div className="bg-white rounded-lg p-3 text-center">
-                <div className="text-[9px] uppercase tracking-wide text-slate-400 mb-0.5">
-                  Return %
+
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                  <div className="bg-white rounded-lg p-3 text-center">
+                    <div className="text-[9px] uppercase tracking-wide text-slate-400 mb-0.5">
+                      Wealth Gained
+                    </div>
+                    <div className="font-mono text-sm font-semibold text-emerald-600">
+                      {formatCompact(projectedFinalValue - initialValue)}
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 text-center">
+                    <div className="text-[9px] uppercase tracking-wide text-slate-400 mb-0.5">
+                      Total Growth
+                    </div>
+                    <div className="font-mono text-sm font-semibold text-emerald-600">
+                      +{Math.round(((projectedFinalValue - initialValue) / initialValue) * 100)}%
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 text-center">
+                    <div className="text-[9px] uppercase tracking-wide text-slate-400 mb-0.5">
+                      Multiplier
+                    </div>
+                    <div className="font-mono text-sm font-semibold text-slate-900">
+                      {(projectedFinalValue / initialValue).toFixed(2)}x
+                    </div>
+                  </div>
                 </div>
-                <div className={`font-mono text-sm font-semibold ${isPositiveReturn ? 'text-emerald-600' : 'text-red-600'}`}>
-                  {isPositiveReturn ? '+' : ''}{result.totalReturnPercent}%
-                </div>
-              </div>
-              <div className="bg-white rounded-lg p-3 text-center">
-                <div className="text-[9px] uppercase tracking-wide text-slate-400 mb-0.5">
-                  Multiplier
-                </div>
-                <div className="font-mono text-sm font-semibold text-slate-900">
-                  {(finalValue / initialValue).toFixed(2)}x
-                </div>
-              </div>
-            </div>
+              </>
+            )}
 
             {/* Growth Visualization */}
             <div className="bg-white rounded-lg p-4">
@@ -443,13 +571,15 @@ const CAGRCalculator = forwardRef<CAGRCalculatorRef>(function CAGRCalculator(pro
                 </div>
                 <div className="flex-1 mx-4 h-2 bg-slate-100 rounded-full relative overflow-hidden">
                   <div
-                    className={`h-full ${isPositiveReturn ? 'bg-gradient-to-r from-emerald-400 to-emerald-600' : 'bg-gradient-to-r from-red-400 to-red-600'} rounded-full`}
+                    className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full"
                     style={{ width: `${Math.min(100, (Math.abs(result.totalReturnPercent) / 5))}%` }}
                   />
                 </div>
                 <div className="text-center">
                   <div className="text-[9px] uppercase tracking-wide text-slate-400">End</div>
-                  <div className="font-mono text-sm font-semibold text-slate-900">{formatCompact(finalValue)}</div>
+                  <div className="font-mono text-sm font-semibold text-slate-900">
+                    {formatCompact(mode === 'find' ? finalValue : projectedFinalValue)}
+                  </div>
                 </div>
               </div>
               <div className="text-center text-xs text-slate-500">
@@ -498,7 +628,9 @@ const CAGRCalculator = forwardRef<CAGRCalculatorRef>(function CAGRCalculator(pro
       {/* Year-by-Year Projection */}
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-100">
-          <h3 className="text-sm font-semibold text-slate-700">Growth Projection at {result.cagr}% CAGR</h3>
+          <h3 className="text-sm font-semibold text-slate-700">
+            Growth Projection at {mode === 'find' ? result.cagr : targetCagr}% CAGR
+          </h3>
         </div>
         <div className="p-4">
           <div className="flex items-center gap-3 mb-3 text-[10px] font-medium text-slate-400 uppercase tracking-wide">

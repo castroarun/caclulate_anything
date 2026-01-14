@@ -130,6 +130,11 @@ function WorkspaceContent() {
     }
   }
 
+  const handleSelectCalculator = (calcId: string) => {
+    setActiveCalc(calcId)
+    setMobileSidebarOpen(false) // Close mobile sidebar on selection
+  }
+
   const activeCalculator = ALL_CALCULATORS.find((c) => c.id === activeCalc)
   const favoriteCalculators = ALL_CALCULATORS.filter((c) => favorites.includes(c.id))
 
@@ -250,7 +255,7 @@ function WorkspaceContent() {
                       {favoriteCalculators.map((calc) => (
                         <li
                           key={`fav-${calc.id}`}
-                          onClick={() => setActiveCalc(calc.id)}
+                          onClick={() => handleSelectCalculator(calc.id)}
                           className={`flex items-center gap-2 px-3 py-2 text-sm cursor-pointer border-l-2 transition-all group ${
                             activeCalc === calc.id
                               ? `${calc.accentBg} ${calc.accentText} border-current font-medium`
@@ -285,7 +290,7 @@ function WorkspaceContent() {
                       {group.items.map((calc) => (
                         <li
                           key={calc.id}
-                          onClick={() => setActiveCalc(calc.id)}
+                          onClick={() => handleSelectCalculator(calc.id)}
                           className={`flex items-center gap-2 px-3 py-2 text-sm cursor-pointer border-l-2 transition-all group ${
                             activeCalc === calc.id
                               ? `${calc.accentBg} ${calc.accentText} border-current font-medium`
@@ -320,11 +325,11 @@ function WorkspaceContent() {
 
         {/* Main Content */}
         <main
-          className={`flex-1 transition-all duration-200 ${
-            sidebarCollapsed ? 'ml-10' : 'ml-[260px]'
+          className={`flex-1 transition-all duration-200 ml-0 ${
+            sidebarCollapsed ? 'md:ml-10' : 'md:ml-[260px]'
           }`}
         >
-          <div className="max-w-4xl mx-auto p-6">
+          <div className="max-w-4xl mx-auto p-4 md:p-6">
             {/* Calculator Header */}
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
@@ -332,18 +337,12 @@ function WorkspaceContent() {
                   {activeCalculator?.icon}
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-xl font-semibold text-slate-900">
-                      {activeCalculator?.name}
-                    </h1>
-                    <button
-                      onClick={() => toggleFavorite(activeCalc)}
-                      className={`text-lg ${favorites.includes(activeCalc) ? 'text-amber-400' : 'text-slate-300 hover:text-amber-400'}`}
-                      title={favorites.includes(activeCalc) ? 'Remove from favorites' : 'Add to favorites'}
-                    >
-                      {favorites.includes(activeCalc) ? '★' : '☆'}
-                    </button>
-                  </div>
+                  <h1 className="text-xl font-semibold text-slate-900">
+                    {activeCalculator?.name}
+                    {favorites.includes(activeCalc) && (
+                      <span className="ml-2 text-amber-400 text-base">★</span>
+                    )}
+                  </h1>
                   <p className="text-sm text-slate-500">
                     {activeCalc === 'emi' && 'Calculate your monthly loan payment'}
                     {activeCalc === 'sip' && 'Plan your systematic investments'}
@@ -367,6 +366,18 @@ function WorkspaceContent() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                {/* Favorite button */}
+                <button
+                  onClick={() => toggleFavorite(activeCalc)}
+                  className={`w-8 h-8 flex items-center justify-center rounded-md border transition-colors ${
+                    favorites.includes(activeCalc)
+                      ? 'text-amber-500 bg-amber-50 border-amber-200 hover:bg-amber-100'
+                      : 'text-slate-400 bg-white border-slate-200 hover:text-amber-500 hover:border-amber-200 hover:bg-amber-50'
+                  }`}
+                  title={favorites.includes(activeCalc) ? 'Remove from favorites' : 'Add to favorites'}
+                >
+                  {favorites.includes(activeCalc) ? '★' : '☆'}
+                </button>
                 {/* Export dropdown for all calculators */}
                 <div className="flex items-center gap-1 mr-2">
                   <span className="text-[10px] text-slate-400">Export:</span>

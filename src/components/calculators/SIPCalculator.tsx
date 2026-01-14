@@ -122,6 +122,20 @@ export interface SIPCalculatorRef {
   handleClear: () => void
 }
 
+// Reverse calculation: Find required SIP for a target corpus
+function calculateRequiredSIP(targetAmount: number, annualRate: number, years: number): number {
+  const monthlyRate = annualRate / 12 / 100
+  const months = years * 12
+
+  if (monthlyRate === 0) {
+    return Math.round(targetAmount / months)
+  }
+
+  // P = M / (((1 + i)^n - 1) / i) × (1 + i))
+  const requiredSIP = targetAmount / (((Math.pow(1 + monthlyRate, months) - 1) / monthlyRate) * (1 + monthlyRate))
+  return Math.round(requiredSIP)
+}
+
 function calculateStepUpSIP(
   monthlyInvestment: number,
   annualRate: number,
@@ -172,7 +186,9 @@ function calculateStepUpSIP(
 }
 
 const SIPCalculator = forwardRef<SIPCalculatorRef>(function SIPCalculator(props, ref) {
+  const [mode, setMode] = useState<'calculate' | 'goal'>('calculate')
   const [monthlyInvestment, setMonthlyInvestment] = useState(10000)
+  const [targetAmount, setTargetAmount] = useState(10000000) // 1 Crore default for goal mode
   const [expectedReturn, setExpectedReturn] = useState(12)
   const [investmentPeriod, setInvestmentPeriod] = useState(10)
   const [lastSaved, setLastSaved] = useState<string | null>(null)
@@ -188,7 +204,9 @@ const SIPCalculator = forwardRef<SIPCalculatorRef>(function SIPCalculator(props,
     const saved = localStorage.getItem('calc_sip')
     if (saved) {
       const data = JSON.parse(saved)
+      setMode(data.mode || 'calculate')
       setMonthlyInvestment(data.monthlyInvestment || 10000)
+      setTargetAmount(data.targetAmount || 10000000)
       setExpectedReturn(data.expectedReturn || 12)
       setInvestmentPeriod(data.investmentPeriod || 10)
       setStepUpPercent(data.stepUpPercent || 10)
@@ -200,13 +218,15 @@ const SIPCalculator = forwardRef<SIPCalculatorRef>(function SIPCalculator(props,
   // Auto-save to localStorage (only after initial load)
   useEffect(() => {
     if (!isLoaded) return
-    const data = { monthlyInvestment, expectedReturn, investmentPeriod, stepUpPercent, notes }
+    const data = { mode, monthlyInvestment, targetAmount, expectedReturn, investmentPeriod, stepUpPercent, notes }
     localStorage.setItem('calc_sip', JSON.stringify(data))
     setLastSaved(new Date().toLocaleTimeString())
-  }, [monthlyInvestment, expectedReturn, investmentPeriod, stepUpPercent, notes, isLoaded])
+  }, [mode, monthlyInvestment, targetAmount, expectedReturn, investmentPeriod, stepUpPercent, notes, isLoaded])
 
   const handleClear = () => {
+    setMode('calculate')
     setMonthlyInvestment(10000)
+    setTargetAmount(10000000)
     setExpectedReturn(12)
     setInvestmentPeriod(10)
     setStepUpPercent(10)
@@ -222,14 +242,23 @@ const SIPCalculator = forwardRef<SIPCalculatorRef>(function SIPCalculator(props,
     handleClear,
   }))
 
+  // Calculate required SIP for goal mode
+  const requiredSIP = useMemo(
+    () => calculateRequiredSIP(targetAmount, expectedReturn, investmentPeriod),
+    [targetAmount, expectedReturn, investmentPeriod]
+  )
+
+  // Use requiredSIP as monthlyInvestment in goal mode for result calculation
+  const effectiveMonthlyInvestment = mode === 'goal' ? requiredSIP : monthlyInvestment
+
   const result = useMemo(
-    () => calculateSIP(monthlyInvestment, expectedReturn, investmentPeriod),
-    [monthlyInvestment, expectedReturn, investmentPeriod]
+    () => calculateSIP(effectiveMonthlyInvestment, expectedReturn, investmentPeriod),
+    [effectiveMonthlyInvestment, expectedReturn, investmentPeriod]
   )
 
   const yearlyBreakdown = useMemo(
-    () => generateYearlyBreakdown(monthlyInvestment, expectedReturn, investmentPeriod),
-    [monthlyInvestment, expectedReturn, investmentPeriod]
+    () => generateYearlyBreakdown(effectiveMonthlyInvestment, expectedReturn, investmentPeriod),
+    [effectiveMonthlyInvestment, expectedReturn, investmentPeriod]
   )
 
   const stepUpResult = useMemo(() => {
@@ -738,31 +767,103 @@ const SIPCalculator = forwardRef<SIPCalculatorRef>(function SIPCalculator(props,
 
       {/* Main Calculator Card */}
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        {/* Mode Toggle */}
+        <div className="p-3 border-b border-slate-100 bg-slate-50">
+          <div className="flex rounded-lg bg-slate-200 p-0.5">
+            <button
+              onClick={() => setMode('calculate')}
+              className={`flex-1 px-4 py-2 text-xs font-medium rounded-md transition-all ${
+                mode === 'calculate'
+                  ? 'bg-white text-green-600 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Calculate Returns
+            </button>
+            <button
+              onClick={() => setMode('goal')}
+              className={`flex-1 px-4 py-2 text-xs font-medium rounded-md transition-all ${
+                mode === 'goal'
+                  ? 'bg-white text-green-600 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Plan for Goal
+            </button>
+          </div>
+          <p className="text-[10px] text-slate-500 text-center mt-2">
+            {mode === 'calculate'
+              ? 'Calculate maturity value for your SIP amount'
+              : 'Find the SIP needed to reach your target corpus'}
+          </p>
+        </div>
+
         <div className="grid md:grid-cols-2">
           {/* Inputs */}
           <div className="p-5 space-y-5 border-r border-slate-100">
-            {/* Monthly Investment */}
-            <div>
-              <div className="flex justify-between items-baseline mb-2">
-                <label className="text-sm font-medium text-slate-600">Monthly Investment</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  ₹{formatIndianNumber(monthlyInvestment)}
-                </span>
+            {mode === 'calculate' ? (
+              /* Monthly Investment - Calculate mode */
+              <div>
+                <div className="flex justify-between items-baseline mb-2">
+                  <label className="text-sm font-medium text-slate-600">Monthly Investment</label>
+                  <span className="font-mono text-base font-semibold text-slate-900">
+                    ₹{formatIndianNumber(monthlyInvestment)}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={500}
+                  max={1000000}
+                  step={500}
+                  value={monthlyInvestment}
+                  onChange={(e) => setMonthlyInvestment(Number(e.target.value))}
+                  className="w-full h-1 bg-slate-200 rounded-full appearance-none cursor-pointer accent-green-600"
+                />
+                <div className="flex justify-between mt-1 text-[10px] text-slate-400">
+                  <span>₹500</span>
+                  <span>₹10L</span>
+                </div>
               </div>
-              <input
-                type="range"
-                min={500}
-                max={1000000}
-                step={500}
-                value={monthlyInvestment}
-                onChange={(e) => setMonthlyInvestment(Number(e.target.value))}
-                className="w-full h-1 bg-slate-200 rounded-full appearance-none cursor-pointer accent-green-600"
-              />
-              <div className="flex justify-between mt-1 text-[10px] text-slate-400">
-                <span>₹500</span>
-                <span>₹10L</span>
+            ) : (
+              /* Target Amount - Goal mode */
+              <div>
+                <div className="flex justify-between items-baseline mb-2">
+                  <label className="text-sm font-medium text-slate-600">Target Corpus</label>
+                  <span className="font-mono text-base font-semibold text-green-600">
+                    ₹{formatIndianNumber(targetAmount)}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={100000}
+                  max={100000000}
+                  step={100000}
+                  value={targetAmount}
+                  onChange={(e) => setTargetAmount(Number(e.target.value))}
+                  className="w-full h-1 bg-slate-200 rounded-full appearance-none cursor-pointer accent-green-600"
+                />
+                <div className="flex justify-between mt-1 text-[10px] text-slate-400">
+                  <span>₹1L</span>
+                  <span>₹10Cr</span>
+                </div>
+                {/* Quick target presets */}
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {[1000000, 2500000, 5000000, 10000000, 50000000].map((amt) => (
+                    <button
+                      key={amt}
+                      onClick={() => setTargetAmount(amt)}
+                      className={`px-2 py-1 text-[10px] rounded-full border transition-colors ${
+                        targetAmount === amt
+                          ? 'bg-green-50 border-green-300 text-green-700'
+                          : 'border-slate-200 text-slate-500 hover:border-green-300'
+                      }`}
+                    >
+                      {formatCompact(amt).replace('₹', '')}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Expected Return Rate */}
             <div>
@@ -813,32 +914,46 @@ const SIPCalculator = forwardRef<SIPCalculatorRef>(function SIPCalculator(props,
 
           {/* Results */}
           <div className="p-5 bg-slate-50">
-            {/* Primary Result - Maturity Value */}
-            <div className="bg-green-50 rounded-lg p-4 text-center mb-4">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-green-600 mb-1">
-                Maturity Value
+            {/* Primary Result - Mode dependent */}
+            {mode === 'calculate' ? (
+              <div className="bg-green-50 rounded-lg p-4 text-center mb-4">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-green-600 mb-1">
+                  Maturity Value
+                </div>
+                <div className="font-mono text-3xl font-bold text-slate-900">
+                  ₹{formatIndianNumber(result.maturityValue)}
+                </div>
               </div>
-              <div className="font-mono text-3xl font-bold text-slate-900">
-                ₹{formatIndianNumber(result.maturityValue)}
+            ) : (
+              <div className="bg-green-50 rounded-lg p-4 text-center mb-4">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-green-600 mb-1">
+                  Required Monthly SIP
+                </div>
+                <div className="font-mono text-3xl font-bold text-slate-900">
+                  ₹{formatIndianNumber(requiredSIP)}
+                </div>
+                <div className="text-xs text-slate-500 mt-1">
+                  to reach ₹{formatIndianNumber(targetAmount)}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Secondary Results */}
             <div className="grid grid-cols-3 gap-2 mb-4">
               <div className="bg-white rounded-lg p-3 text-center">
                 <div className="text-[9px] uppercase tracking-wide text-slate-400 mb-0.5">
-                  Invested
+                  {mode === 'calculate' ? 'Invested' : 'Target'}
                 </div>
                 <div className="font-mono text-sm font-semibold text-slate-900">
-                  {formatCompact(result.totalInvestment)}
+                  {mode === 'calculate' ? formatCompact(result.totalInvestment) : formatCompact(targetAmount)}
                 </div>
               </div>
               <div className="bg-white rounded-lg p-3 text-center">
                 <div className="text-[9px] uppercase tracking-wide text-slate-400 mb-0.5">
-                  Returns
+                  {mode === 'calculate' ? 'Returns' : 'Invested'}
                 </div>
                 <div className="font-mono text-sm font-semibold text-slate-900">
-                  {formatCompact(result.expectedReturns)}
+                  {mode === 'calculate' ? formatCompact(result.expectedReturns) : formatCompact(result.totalInvestment)}
                 </div>
               </div>
               <div className="bg-white rounded-lg p-3 text-center">

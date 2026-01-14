@@ -3,14 +3,14 @@
 import Link from 'next/link'
 
 const POPULAR_CALCULATORS = [
-  { id: 'emi', name: 'EMI Calculator', icon: '🏠' },
-  { id: 'sip', name: 'SIP Calculator', icon: '📈' },
-  { id: 'fd', name: 'FD Calculator', icon: '🏦' },
-  { id: 'lumpsum', name: 'Lumpsum', icon: '💰' },
-  { id: 'tax', name: 'Tax Planner', icon: '🧮' },
-  { id: 'col', name: 'Cost of Living', icon: '🌍' },
-  { id: 'clock', name: 'World Clock', icon: '⏰' },
-  { id: 'compound', name: 'Compound Interest', icon: '📊' },
+  { id: 'emi', name: 'EMI Calculator', icon: '🏠', tagline: 'Plan your loan repayments' },
+  { id: 'sip', name: 'SIP Calculator', icon: '📈', tagline: 'Grow wealth systematically' },
+  { id: 'fd', name: 'FD Calculator', icon: '🏦', tagline: 'Maximize fixed returns' },
+  { id: 'lumpsum', name: 'Lumpsum', icon: '💰', tagline: 'One-time investment growth' },
+  { id: 'tax', name: 'Tax Planner', icon: '🧮', tagline: 'Optimize your tax savings' },
+  { id: 'col', name: 'Cost of Living', icon: '🌍', tagline: 'Compare city expenses' },
+  { id: 'clock', name: 'World Clock', icon: '⏰', tagline: 'Track global time zones' },
+  { id: 'compound', name: 'Compound Interest', icon: '📊', tagline: 'See the power of compounding' },
 ]
 
 export default function LandingPage() {
@@ -58,8 +58,8 @@ export default function LandingPage() {
             <br />
             <span className="text-blue-600">plan anything.</span>
           </h1>
-          <p className="font-display text-2xl sm:text-3xl font-semibold text-blue-600 italic mb-10">
-            Beautifully simple.
+          <p className="font-display text-2xl sm:text-3xl font-semibold mb-10">
+            <span className="text-slate-900">Beautifully</span> <span className="text-blue-600">simple.</span>
           </p>
           <div className="flex gap-3 justify-center">
             <Link
@@ -93,17 +93,20 @@ export default function LandingPage() {
               View all →
             </Link>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             {POPULAR_CALCULATORS.map((calc) => (
               <Link
                 key={calc.id}
                 href={`/workspace?calc=${calc.id}`}
-                className="flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-xl hover:border-blue-500 hover:shadow-sm transition-all group"
+                className="flex flex-col p-4 bg-white border border-slate-200 rounded-xl hover:border-blue-500 hover:shadow-md transition-all group"
               >
-                <div className="w-9 h-9 bg-blue-50 rounded-lg flex items-center justify-center text-lg group-hover:bg-blue-100 transition-colors">
-                  {calc.icon}
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center text-xl group-hover:bg-blue-100 transition-colors">
+                    {calc.icon}
+                  </div>
+                  <span className="text-sm font-semibold text-slate-900">{calc.name}</span>
                 </div>
-                <span className="text-sm font-semibold text-slate-900">{calc.name}</span>
+                <p className="text-xs text-slate-500 pl-[52px]">{calc.tagline}</p>
               </Link>
             ))}
           </div>
