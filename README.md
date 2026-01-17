@@ -1,4 +1,8 @@
 <p align="center">
+  <a href="https://anycalc.in"><img src="https://img.shields.io/badge/🚀_Live_Demo-anycalc.in-2563EB?style=for-the-badge" alt="Live Demo" /></a>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/Next.js-14+-black?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js" />
   <img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Tailwind-3.x-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS" />
@@ -16,7 +20,7 @@
 </h3>
 
 <p align="center">
-  A comprehensive suite of 18+ financial and utility calculators in one elegant workspace.<br />
+  A comprehensive suite of 19+ financial, health, and utility calculators in one elegant workspace.<br />
   Built for speed, designed for clarity, made for everyone.
 </p>
 
@@ -38,7 +42,7 @@
   "targetDate": null,
   "nextAction": "Add more calculators based on feedback",
   "blocker": null,
-  "demoUrl": "https://anycalculator-seven.vercel.app",
+  "demoUrl": "https://anycalc.in",
   "techStack": ["Next.js", "TypeScript", "Tailwind CSS"],
   "shipped": true,
   "linkedinPosted": false
@@ -50,7 +54,7 @@
 
 ## Features
 
-- **18+ Calculators** — From EMI to Tax, SIP to World Clock, all in one place
+- **19+ Calculators** — From EMI to Tax, SIP to BMI, all in one place
 - **Workspace Mode** — Open multiple calculators side-by-side for comparison
 - **Interactive Charts** — Visualize results with beautiful, responsive charts
 - **Dark Mode** — Easy on the eyes, day or night
@@ -87,6 +91,11 @@
 | **HRA** | House Rent Allowance exemption calculator |
 | **Gratuity** | Gratuity amount calculator |
 | **GST** | Goods & Services Tax calculator |
+
+### Health & Fitness
+| Calculator | Description |
+|------------|-------------|
+| **BMI** | Body Mass Index with target weight planner |
 
 ### Lifestyle & Utility
 | Calculator | Description |
@@ -145,7 +154,7 @@ npm run start
 ## Project Structure
 
 ```
-calci/
+any_calculator/
 ├── src/
 │   ├── app/                      # Next.js App Router
 │   │   ├── page.tsx             # Landing page
