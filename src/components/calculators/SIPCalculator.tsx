@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
+import { useNumberFormat } from '@/contexts/NumberFormatContext'
 
 interface SIPResult {
   monthlyInvestment: number
@@ -42,7 +43,8 @@ function formatIndianNumber(num: number): string {
   return result
 }
 
-function formatCompact(num: number): string {
+// Static format for exports (always Indian)
+function formatCompactStatic(num: number): string {
   if (num >= 10000000) return `₹${(num / 10000000).toFixed(2)}Cr`
   if (num >= 100000) return `₹${(num / 100000).toFixed(2)}L`
   if (num >= 1000) return `₹${(num / 1000).toFixed(1)}K`
@@ -186,6 +188,7 @@ function calculateStepUpSIP(
 }
 
 const SIPCalculator = forwardRef<SIPCalculatorRef>(function SIPCalculator(props, ref) {
+  const { formatCurrencyCompact } = useNumberFormat()
   const [mode, setMode] = useState<'calculate' | 'goal'>('calculate')
   const [monthlyInvestment, setMonthlyInvestment] = useState(10000)
   const [targetAmount, setTargetAmount] = useState(10000000) // 1 Crore default for goal mode
@@ -285,13 +288,13 @@ const SIPCalculator = forwardRef<SIPCalculatorRef>(function SIPCalculator(props,
             <span class="year-label">Y${y.year}</span>
             <div class="bar-container" style="width: ${barWidth}%">
               <div class="bar-invested" style="width: ${investedWidth}%">
-                ${investedWidth > 20 ? `<span>${formatCompact(y.invested)}</span>` : ''}
+                ${investedWidth > 20 ? `<span>${formatCurrencyCompact(y.invested)}</span>` : ''}
               </div>
               <div class="bar-returns" style="width: ${100 - investedWidth}%">
-                ${(100 - investedWidth) > 20 ? `<span>${formatCompact(y.returns)}</span>` : ''}
+                ${(100 - investedWidth) > 20 ? `<span>${formatCurrencyCompact(y.returns)}</span>` : ''}
               </div>
             </div>
-            <span class="value-label">${formatCompact(y.value)}</span>
+            <span class="value-label">${formatCurrencyCompact(y.value)}</span>
           </div>
         `
       })
@@ -858,7 +861,7 @@ const SIPCalculator = forwardRef<SIPCalculatorRef>(function SIPCalculator(props,
                           : 'border-slate-200 text-slate-500 hover:border-green-300'
                       }`}
                     >
-                      {formatCompact(amt).replace('₹', '')}
+                      {formatCurrencyCompact(amt).replace('₹', '')}
                     </button>
                   ))}
                 </div>
@@ -945,7 +948,7 @@ const SIPCalculator = forwardRef<SIPCalculatorRef>(function SIPCalculator(props,
                   {mode === 'calculate' ? 'Invested' : 'Target'}
                 </div>
                 <div className="font-mono text-sm font-semibold text-slate-900">
-                  {mode === 'calculate' ? formatCompact(result.totalInvestment) : formatCompact(targetAmount)}
+                  {mode === 'calculate' ? formatCurrencyCompact(result.totalInvestment) : formatCurrencyCompact(targetAmount)}
                 </div>
               </div>
               <div className="bg-white rounded-lg p-3 text-center">
@@ -953,7 +956,7 @@ const SIPCalculator = forwardRef<SIPCalculatorRef>(function SIPCalculator(props,
                   {mode === 'calculate' ? 'Returns' : 'Invested'}
                 </div>
                 <div className="font-mono text-sm font-semibold text-slate-900">
-                  {mode === 'calculate' ? formatCompact(result.expectedReturns) : formatCompact(result.totalInvestment)}
+                  {mode === 'calculate' ? formatCurrencyCompact(result.expectedReturns) : formatCurrencyCompact(result.totalInvestment)}
                 </div>
               </div>
               <div className="bg-white rounded-lg p-3 text-center">
@@ -1114,11 +1117,11 @@ const SIPCalculator = forwardRef<SIPCalculatorRef>(function SIPCalculator(props,
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-slate-500">Total Invested</span>
-                        <span className="font-mono text-sm font-semibold text-slate-700">{formatCompact(result.totalInvestment)}</span>
+                        <span className="font-mono text-sm font-semibold text-slate-700">{formatCurrencyCompact(result.totalInvestment)}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-slate-500">Maturity Value</span>
-                        <span className="font-mono text-sm font-semibold text-slate-700">{formatCompact(result.maturityValue)}</span>
+                        <span className="font-mono text-sm font-semibold text-slate-700">{formatCurrencyCompact(result.maturityValue)}</span>
                       </div>
                     </div>
                   </div>
@@ -1135,11 +1138,11 @@ const SIPCalculator = forwardRef<SIPCalculatorRef>(function SIPCalculator(props,
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-blue-700">Total Invested</span>
-                        <span className="font-mono text-sm font-semibold text-blue-700">{formatCompact(stepUpResult.totalInvestment)}</span>
+                        <span className="font-mono text-sm font-semibold text-blue-700">{formatCurrencyCompact(stepUpResult.totalInvestment)}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-blue-700">Maturity Value</span>
-                        <span className="font-mono text-sm font-semibold text-blue-700">{formatCompact(stepUpResult.maturityValue)}</span>
+                        <span className="font-mono text-sm font-semibold text-blue-700">{formatCurrencyCompact(stepUpResult.maturityValue)}</span>
                       </div>
                     </div>
                   </div>
@@ -1202,7 +1205,7 @@ const SIPCalculator = forwardRef<SIPCalculatorRef>(function SIPCalculator(props,
                             >
                               {investedWidth > 25 && (
                                 <span className="text-[9px] text-white font-medium">
-                                  {formatCompact(year.invested)}
+                                  {formatCurrencyCompact(year.invested)}
                                 </span>
                               )}
                             </div>
@@ -1212,13 +1215,13 @@ const SIPCalculator = forwardRef<SIPCalculatorRef>(function SIPCalculator(props,
                             >
                               {(100 - investedWidth) > 25 && (
                                 <span className="text-[9px] text-white font-medium">
-                                  {formatCompact(year.returns)}
+                                  {formatCurrencyCompact(year.returns)}
                                 </span>
                               )}
                             </div>
                           </div>
                           <span className="text-[10px] text-slate-600 w-20 text-right font-mono">
-                            {formatCompact(year.value)}
+                            {formatCurrencyCompact(year.value)}
                           </span>
                         </div>
                       )
@@ -1273,7 +1276,7 @@ const SIPCalculator = forwardRef<SIPCalculatorRef>(function SIPCalculator(props,
                     >
                       {investedWidth > 25 && (
                         <span className="text-[9px] text-white font-medium">
-                          {formatCompact(year.invested)}
+                          {formatCurrencyCompact(year.invested)}
                         </span>
                       )}
                     </div>
@@ -1283,13 +1286,13 @@ const SIPCalculator = forwardRef<SIPCalculatorRef>(function SIPCalculator(props,
                     >
                       {(100 - investedWidth) > 25 && (
                         <span className="text-[9px] text-white font-medium">
-                          {formatCompact(year.returns)}
+                          {formatCurrencyCompact(year.returns)}
                         </span>
                       )}
                     </div>
                   </div>
                   <span className="text-[10px] text-slate-600 w-20 text-right font-mono">
-                    {formatCompact(year.value)}
+                    {formatCurrencyCompact(year.value)}
                   </span>
                 </div>
               )

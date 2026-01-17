@@ -9,6 +9,8 @@ interface NumberFormatContextType {
   setFormat: (format: NumberFormat) => void
   formatNumber: (num: number) => string
   formatCompact: (num: number) => string
+  formatCurrency: (num: number) => string
+  formatCurrencyCompact: (num: number) => string
 }
 
 const NumberFormatContext = createContext<NumberFormatContextType | undefined>(undefined)
@@ -88,13 +90,21 @@ export function NumberFormatProvider({ children }: { children: ReactNode }) {
     return format === 'indian' ? formatCompactIndian(num) : formatCompactInternational(num)
   }
 
+  const formatCurrency = (num: number): string => {
+    return '₹' + formatNumber(num)
+  }
+
+  const formatCurrencyCompact = (num: number): string => {
+    return '₹' + formatCompact(num)
+  }
+
   // Prevent hydration mismatch by not rendering until loaded
   if (!isLoaded) {
     return <>{children}</>
   }
 
   return (
-    <NumberFormatContext.Provider value={{ format, setFormat, formatNumber, formatCompact }}>
+    <NumberFormatContext.Provider value={{ format, setFormat, formatNumber, formatCompact, formatCurrency, formatCurrencyCompact }}>
       {children}
     </NumberFormatContext.Provider>
   )
@@ -109,6 +119,8 @@ export function useNumberFormat() {
       setFormat: () => {},
       formatNumber: formatIndian,
       formatCompact: formatCompactIndian,
+      formatCurrency: (num: number) => '₹' + formatIndian(num),
+      formatCurrencyCompact: (num: number) => '₹' + formatCompactIndian(num),
     }
   }
   return context

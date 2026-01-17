@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
+import { useNumberFormat } from '@/contexts/NumberFormatContext'
+import { useCloudSync } from '@/hooks/useCloudSync'
 
 interface EMIResult {
   emi: number
@@ -73,7 +75,8 @@ function formatIndianNumber(num: number): string {
   return result
 }
 
-function formatCompact(num: number): string {
+// Static format for PDF/HTML exports (always Indian format)
+function formatCompactStatic(num: number): string {
   if (num >= 10000000) return `₹${(num / 10000000).toFixed(2)}Cr`
   if (num >= 100000) return `₹${(num / 100000).toFixed(2)}L`
   if (num >= 1000) return `₹${(num / 1000).toFixed(1)}K`
@@ -232,6 +235,8 @@ function calculateAffordability(emi: number, rate: number, tenure: number): numb
 }
 
 const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props, ref) {
+  const { formatCurrencyCompact } = useNumberFormat()
+  const { syncCalculator } = useCloudSync()
   const [mode, setMode] = useState<'calculate' | 'affordability'>('calculate')
   const [principal, setPrincipal] = useState(5000000)
   const [emiBudget, setEmiBudget] = useState(50000) // For affordability mode
@@ -285,13 +290,14 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
     setIsLoaded(true)
   }, [])
 
-  // Auto-save to localStorage (only after initial load)
+  // Auto-save to localStorage + cloud (only after initial load)
   useEffect(() => {
     if (!isLoaded) return
     const data = { mode, principal, emiBudget, rate, tenure, notes }
     localStorage.setItem('calc_emi', JSON.stringify(data))
+    syncCalculator('emi', data) // Sync to cloud (debounced, only if logged in)
     setLastSaved(new Date().toLocaleTimeString())
-  }, [mode, principal, emiBudget, rate, tenure, notes, isLoaded])
+  }, [mode, principal, emiBudget, rate, tenure, notes, isLoaded, syncCalculator])
 
   // Calculate max affordable loan in affordability mode
   const affordableLoan = useMemo(
@@ -380,13 +386,13 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
             <span class="year-label">Y${y.year}${hasPrepayment ? '*' : ''}</span>
             <div class="bar-container" style="width: ${barWidth}%">
               <div class="bar-principal" style="width: ${principalWidth}%">
-                ${principalWidth > 20 ? `<span>${formatCompact(y.principal)}</span>` : ''}
+                ${principalWidth > 20 ? `<span>${formatCompactStatic(y.principal)}</span>` : ''}
               </div>
               <div class="bar-interest" style="width: ${100 - principalWidth}%">
-                ${(100 - principalWidth) > 20 ? `<span>${formatCompact(y.interest)}</span>` : ''}
+                ${(100 - principalWidth) > 20 ? `<span>${formatCompactStatic(y.interest)}</span>` : ''}
               </div>
             </div>
-            <span class="balance-label">${formatCompact(y.balance)}</span>
+            <span class="balance-label">${formatCompactStatic(y.balance)}</span>
             ${hasPrepayment ? `<span class="prepayment-badge">+₹${formatIndianNumber(prepaymentAmount)}</span>` : ''}
           </div>
         `
@@ -870,7 +876,7 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
                 <input
                   type="range"
                   min={100000}
-                  max={100000000}
+                  max={50000000}
                   step={100000}
                   value={principal}
                   onChange={(e) => setPrincipal(Number(e.target.value))}
@@ -878,7 +884,7 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
                 />
                 <div className="flex justify-between mt-1 text-[10px] text-slate-400">
                   <span>₹1L</span>
-                  <span>₹10Cr</span>
+                  <span>₹5Cr</span>
                 </div>
               </div>
             ) : (
@@ -1039,7 +1045,7 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
                   {mode === 'calculate' ? 'Principal' : 'EMI Budget'}
                 </div>
                 <div className="font-mono text-sm font-semibold text-slate-900">
-                  {mode === 'calculate' ? formatCompact(principal) : formatCompact(emiBudget)}
+                  {mode === 'calculate' ? formatCurrencyCompact(principal) : formatCurrencyCompact(emiBudget)}
                 </div>
               </div>
               <div className="bg-white rounded-lg p-3 text-center">
@@ -1047,7 +1053,7 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
                   Interest
                 </div>
                 <div className="font-mono text-sm font-semibold text-slate-900">
-                  {formatCompact(result.totalInterest)}
+                  {formatCurrencyCompact(result.totalInterest)}
                 </div>
               </div>
               <div className="bg-white rounded-lg p-3 text-center">
@@ -1055,7 +1061,7 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
                   Total
                 </div>
                 <div className="font-mono text-sm font-semibold text-slate-900">
-                  {formatCompact(result.totalPayment)}
+                  {formatCurrencyCompact(result.totalPayment)}
                 </div>
               </div>
             </div>
@@ -1165,7 +1171,7 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
                   >
                     {principalWidth > 20 && (
                       <span className="text-[9px] text-white font-medium">
-                        {formatCompact(year.principal)}
+                        {formatCurrencyCompact(year.principal)}
                       </span>
                     )}
                   </div>
@@ -1175,13 +1181,13 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
                   >
                     {(100 - principalWidth) > 20 && (
                       <span className="text-[9px] text-white font-medium">
-                        {formatCompact(year.interest)}
+                        {formatCurrencyCompact(year.interest)}
                       </span>
                     )}
                   </div>
                 </div>
                 <span className="text-[11px] text-slate-600 w-20 text-right font-mono">
-                  {formatCompact(year.balance)}
+                  {formatCurrencyCompact(year.balance)}
                 </span>
               </div>
             )
@@ -1322,11 +1328,11 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-slate-500">Total Interest</span>
-                        <span className="font-mono text-sm font-semibold text-slate-700">{formatCompact(result.totalInterest)}</span>
+                        <span className="font-mono text-sm font-semibold text-slate-700">{formatCurrencyCompact(result.totalInterest)}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-slate-500">Total Payment</span>
-                        <span className="font-mono text-sm font-semibold text-slate-700">{formatCompact(result.totalPayment)}</span>
+                        <span className="font-mono text-sm font-semibold text-slate-700">{formatCurrencyCompact(result.totalPayment)}</span>
                       </div>
                     </div>
                   </div>
@@ -1345,11 +1351,11 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-green-700">Total Interest</span>
-                        <span className="font-mono text-sm font-semibold text-green-700">{formatCompact(prepaymentResult.newTotalInterest)}</span>
+                        <span className="font-mono text-sm font-semibold text-green-700">{formatCurrencyCompact(prepaymentResult.newTotalInterest)}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-green-700">Total Payment</span>
-                        <span className="font-mono text-sm font-semibold text-green-700">{formatCompact(prepaymentResult.newTotalPayment + totalPrepaymentAmount)}</span>
+                        <span className="font-mono text-sm font-semibold text-green-700">{formatCurrencyCompact(prepaymentResult.newTotalPayment + totalPrepaymentAmount)}</span>
                       </div>
                     </div>
                   </div>
@@ -1414,7 +1420,7 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
                             >
                               {principalWidth > 25 && (
                                 <span className="text-[9px] text-white font-medium">
-                                  {formatCompact(year.principal)}
+                                  {formatCurrencyCompact(year.principal)}
                                 </span>
                               )}
                             </div>
@@ -1424,13 +1430,13 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
                             >
                               {(100 - principalWidth) > 25 && (
                                 <span className="text-[9px] text-white font-medium">
-                                  {formatCompact(year.interest)}
+                                  {formatCurrencyCompact(year.interest)}
                                 </span>
                               )}
                             </div>
                           </div>
                           <span className="text-[10px] text-slate-600 w-20 text-right font-mono">
-                            {formatCompact(year.balance)}
+                            {formatCurrencyCompact(year.balance)}
                           </span>
                         </div>
                       )

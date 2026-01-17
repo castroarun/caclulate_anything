@@ -115,9 +115,12 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="py-8 px-4 border-t border-slate-200 mt-12">
-        <div className="max-w-5xl mx-auto text-center">
+        <div className="max-w-5xl mx-auto text-center space-y-2">
           <p className="text-sm text-slate-500">
             AnyCalc — Calculate everything. Plan anything.
+          </p>
+          <p className="text-xs text-slate-400">
+            © {new Date().getFullYear()} AnyCalc. All rights reserved.
           </p>
         </div>
       </footer>

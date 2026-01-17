@@ -1,12 +1,15 @@
 'use client'
 
 import { NumberFormatProvider } from '@/contexts/NumberFormatContext'
+import { AuthProvider } from '@/contexts/AuthContext'
 import { ReactNode } from 'react'
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <NumberFormatProvider>
-      {children}
-    </NumberFormatProvider>
+    <AuthProvider>
+      <NumberFormatProvider>
+        {children}
+      </NumberFormatProvider>
+    </AuthProvider>
   )
 }

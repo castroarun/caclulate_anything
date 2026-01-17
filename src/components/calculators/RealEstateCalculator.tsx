@@ -9,8 +9,8 @@ const CII_DATA: Record<string, number> = {
   '2006': 122, '2007': 129, '2008': 137, '2009': 148, '2010': 167,
   '2011': 184, '2012': 200, '2013': 220, '2014': 240, '2015': 254,
   '2016': 264, '2017': 272, '2018': 280, '2019': 289, '2020': 301,
-  '2021': 317, '2022': 331, '2023': 348, '2024': 363, '2025': 378,
-  '2026': 394, // Estimated
+  '2021': 317, '2022': 331, '2023': 348, '2024': 363, '2025': 376,
+  '2026': 390, // Estimated (~3.7% growth)
 }
 
 // Get financial year from date
@@ -284,11 +284,103 @@ function calculateCAGR(beginValue: number, endValue: number, years: number): num
   return (Math.pow(endValue / beginValue, 1 / years) - 1) * 100
 }
 
+// Split-bracket tax calculation for additional income
+// Takes into account current taxable income and calculates tax with proper bracket splitting
+interface SplitBracketParams {
+  additionalIncome: number
+  currentTaxableIncome: number
+  regime: 'new' | 'old'
+  includeCess?: boolean
+}
+
+interface SplitBracketResult {
+  tax: number
+  breakdown: Array<{ rate: number; amount: number; tax: number }>
+  effectiveRate: number
+}
+
+function calculateSplitBracketTax(params: SplitBracketParams): SplitBracketResult {
+  const { additionalIncome, currentTaxableIncome, regime, includeCess = true } = params
+  const cessRate = includeCess ? 0.04 : 0
+
+  if (additionalIncome <= 0) {
+    return { tax: 0, breakdown: [], effectiveRate: 0 }
+  }
+
+  // Tax brackets for New Regime (FY 2024-25 onwards)
+  const newRegimeBrackets = [
+    { limit: 300000, rate: 0 },
+    { limit: 700000, rate: 5 },
+    { limit: 1000000, rate: 10 },
+    { limit: 1200000, rate: 15 },
+    { limit: 1500000, rate: 20 },
+    { limit: Infinity, rate: 30 },
+  ]
+
+  // Tax brackets for Old Regime
+  const oldRegimeBrackets = [
+    { limit: 250000, rate: 0 },
+    { limit: 500000, rate: 5 },
+    { limit: 1000000, rate: 20 },
+    { limit: Infinity, rate: 30 },
+  ]
+
+  const brackets = regime === 'new' ? newRegimeBrackets : oldRegimeBrackets
+  const breakdown: Array<{ rate: number; amount: number; tax: number }> = []
+
+  let remainingIncome = additionalIncome
+  let totalIncome = currentTaxableIncome
+  let totalTax = 0
+
+  // Find the current bracket and room left
+  for (let i = 0; i < brackets.length && remainingIncome > 0; i++) {
+    const bracket = brackets[i]
+    const prevLimit = i === 0 ? 0 : brackets[i - 1].limit
+
+    // If current income is already above this bracket, skip
+    if (totalIncome >= bracket.limit) continue
+
+    // Calculate room in this bracket
+    const roomInBracket = bracket.limit - Math.max(totalIncome, prevLimit)
+    const incomeInThisBracket = Math.min(remainingIncome, roomInBracket)
+
+    if (incomeInThisBracket > 0) {
+      const taxInBracket = Math.round(incomeInThisBracket * (bracket.rate / 100))
+      totalTax += taxInBracket
+      breakdown.push({
+        rate: bracket.rate,
+        amount: incomeInThisBracket,
+        tax: taxInBracket,
+      })
+      remainingIncome -= incomeInThisBracket
+      totalIncome += incomeInThisBracket
+    }
+  }
+
+  // Add cess
+  const cessAmount = Math.round(totalTax * cessRate)
+  const finalTax = totalTax + cessAmount
+
+  return {
+    tax: finalTax,
+    breakdown,
+    effectiveRate: additionalIncome > 0 ? (finalTax / additionalIncome) * 100 : 0,
+  }
+}
+
+// Salary data for split-bracket calculations
+interface SalaryDataForCalc {
+  usingSalaryRate: boolean
+  taxableIncome: number
+  regime: 'new' | 'old'
+}
+
 // Calculate exemption strategies
 function calculateExemptions(
   property: PropertyDetails,
   result: CapitalGainsResult,
-  projectionState: Section54ProjectionState
+  projectionState: Section54ProjectionState,
+  salaryDataForCalc?: SalaryDataForCalc
 ): ExemptionStrategy[] {
   const saleDate = new Date(property.saleDate)
   const purchaseDate = new Date(property.purchaseDate)
@@ -339,11 +431,23 @@ function calculateExemptions(
       lockInYears
     )
 
-    // Tax calculations on returns
-    const taxSlab = projectionState.taxSlab / 100
+    // Tax calculations on returns - use split-bracket if salary data available
     const cessRate = 0.04
-    // Rental income is taxed at slab rate
-    const taxOnRentalIncome = Math.round(totalRentalIncome * taxSlab * (1 + cessRate))
+
+    // Calculate tax on rental income with split-bracket if using salary data
+    let taxOnRentalIncome: number
+    if (salaryDataForCalc?.usingSalaryRate && totalRentalIncome > 0) {
+      const rentalTaxResult = calculateSplitBracketTax({
+        additionalIncome: totalRentalIncome,
+        currentTaxableIncome: salaryDataForCalc.taxableIncome,
+        regime: salaryDataForCalc.regime,
+      })
+      taxOnRentalIncome = rentalTaxResult.tax
+    } else {
+      const taxSlab = projectionState.taxSlab / 100
+      taxOnRentalIncome = Math.round(totalRentalIncome * taxSlab * (1 + cessRate))
+    }
+
     // Capital appreciation on property sale after lock-in is LTCG at 12.5%
     const taxOnAppreciation = capitalAppreciation > 0
       ? Math.round(capitalAppreciation * 0.125 * (1 + cessRate))
@@ -358,8 +462,19 @@ function calculateExemptions(
     const returnAt8Percent = Math.round(
       afterTaxAmount * Math.pow(1.08, lockInYears) - afterTaxAmount
     )
-    // FD interest is taxed at slab rate
-    const taxOnFDReturns = Math.round(returnAt8Percent * taxSlab * (1 + cessRate))
+    // FD interest is taxed at slab rate - use split-bracket if salary data available
+    let taxOnFDReturns: number
+    if (salaryDataForCalc?.usingSalaryRate && returnAt8Percent > 0) {
+      const fdTaxResult = calculateSplitBracketTax({
+        additionalIncome: returnAt8Percent,
+        currentTaxableIncome: salaryDataForCalc.taxableIncome,
+        regime: salaryDataForCalc.regime,
+      })
+      taxOnFDReturns = fdTaxResult.tax
+    } else {
+      const taxSlab = projectionState.taxSlab / 100
+      taxOnFDReturns = Math.round(returnAt8Percent * taxSlab * (1 + cessRate))
+    }
     const netFDReturns = returnAt8Percent - taxOnFDReturns
 
     strategies.push({
@@ -420,9 +535,20 @@ function calculateExemptions(
   // Simple interest for 54EC bonds (paid annually, not compounded)
   const totalInterest = Math.round(maxBondInvestment * (bondInterestRate / 100) * bondLockInYears)
   const maturityValue = maxBondInvestment + totalInterest
-  // Interest is taxable at user's slab rate
-  const userTaxSlab = projectionState.taxSlab / 100
-  const taxOnInterest = Math.round(totalInterest * userTaxSlab * 1.04) // slab rate + 4% cess
+  // Interest is taxable at user's slab rate (with split-bracket if salary data available)
+  let taxOnInterest: number
+  if (salaryDataForCalc?.usingSalaryRate && totalInterest > 0) {
+    // Use split-bracket: bond interest comes on top of salary income
+    const interestTaxResult = calculateSplitBracketTax({
+      additionalIncome: totalInterest,
+      currentTaxableIncome: salaryDataForCalc.taxableIncome,
+      regime: salaryDataForCalc.regime,
+    })
+    taxOnInterest = interestTaxResult.tax
+  } else {
+    const userTaxSlab = projectionState.taxSlab / 100
+    taxOnInterest = Math.round(totalInterest * userTaxSlab * 1.04) // slab rate + 4% cess
+  }
   const netMaturityValue = maturityValue - taxOnInterest
 
   strategies.push({
@@ -593,6 +719,27 @@ const RealEstateCalculator = forwardRef<RealEstateCalculatorRef>(function RealEs
     taxSlab: 30, // Default to highest slab
   })
 
+  // Salary calculator integration for tax slab
+  const [salaryData, setSalaryData] = useState<{
+    available: boolean
+    ctc: number
+    taxableIncome: number
+    marginalRate: number
+    nextBracketRate: number
+    roomInBracket: number // How much more income before hitting next bracket
+    regime: 'new' | 'old'
+    usingSalaryRate: boolean
+  }>({
+    available: false,
+    ctc: 0,
+    taxableIncome: 0,
+    marginalRate: 30,
+    nextBracketRate: 30,
+    roomInBracket: 0,
+    regime: 'new',
+    usingSalaryRate: false,
+  })
+
   // Reinvestment allocation state - initialized with defaults, will update based on net proceeds
   const [reinvestmentAllocation, setReinvestmentAllocation] = useState<ReinvestmentAllocation>({
     personalUse: {
@@ -636,9 +783,114 @@ const RealEstateCalculator = forwardRef<RealEstateCalculatorRef>(function RealEs
     setLastSaved(new Date().toLocaleTimeString())
   }, [property, activeTab, isLoaded])
 
+  // Load salary calculator data and compute marginal tax rate with bracket info
+  useEffect(() => {
+    const loadSalaryData = () => {
+      try {
+        const saved = localStorage.getItem('calc_salary')
+        if (saved) {
+          const data = JSON.parse(saved)
+          const ctc = data.ctc || 0
+          const regime = (data.taxRegime || 'new') as 'new' | 'old'
+
+          // Only consider salary data "available" if:
+          // 1. CTC is different from default (1200000) - means user modified it
+          // 2. OR userModified flag is set (for future-proofing)
+          const DEFAULT_CTC = 1200000
+          const isUserModified = data.userModified === true || ctc !== DEFAULT_CTC
+
+          if (ctc > 0 && isUserModified) {
+            // Calculate taxable income (rough estimate)
+            const pf = (ctc / 12) * 0.4 * 0.12 * 12 // 12% of 40% basic
+            const standardDeduction = regime === 'new' ? 75000 : 50000
+            const taxableIncome = Math.max(0, ctc - pf - standardDeduction)
+
+            // Tax bracket thresholds (New Regime FY 2024-25)
+            // 0-3L: 0%, 3-7L: 5%, 7-10L: 10%, 10-12L: 15%, 12-15L: 20%, 15L+: 30%
+            // Old Regime: 0-2.5L: 0%, 2.5-5L: 5%, 5-10L: 20%, 10L+: 30%
+
+            let marginalRate = 0
+            let nextBracketRate = 0
+            let roomInBracket = 0
+
+            if (regime === 'new') {
+              if (taxableIncome > 1500000) {
+                marginalRate = 30; nextBracketRate = 30; roomInBracket = Infinity
+              } else if (taxableIncome > 1200000) {
+                marginalRate = 20; nextBracketRate = 30; roomInBracket = 1500000 - taxableIncome
+              } else if (taxableIncome > 1000000) {
+                marginalRate = 15; nextBracketRate = 20; roomInBracket = 1200000 - taxableIncome
+              } else if (taxableIncome > 700000) {
+                marginalRate = 10; nextBracketRate = 15; roomInBracket = 1000000 - taxableIncome
+              } else if (taxableIncome > 300000) {
+                marginalRate = 5; nextBracketRate = 10; roomInBracket = 700000 - taxableIncome
+              } else {
+                marginalRate = 0; nextBracketRate = 5; roomInBracket = 300000 - taxableIncome
+              }
+            } else {
+              if (taxableIncome > 1000000) {
+                marginalRate = 30; nextBracketRate = 30; roomInBracket = Infinity
+              } else if (taxableIncome > 500000) {
+                marginalRate = 20; nextBracketRate = 30; roomInBracket = 1000000 - taxableIncome
+              } else if (taxableIncome > 250000) {
+                marginalRate = 5; nextBracketRate = 20; roomInBracket = 500000 - taxableIncome
+              } else {
+                marginalRate = 0; nextBracketRate = 5; roomInBracket = 250000 - taxableIncome
+              }
+            }
+
+            setSalaryData({
+              available: true,
+              ctc,
+              taxableIncome,
+              marginalRate,
+              nextBracketRate,
+              roomInBracket,
+              regime,
+              usingSalaryRate: false,
+            })
+          } else {
+            // Reset to unavailable if data exists but is default/unmodified
+            setSalaryData({
+              available: false,
+              ctc: 0,
+              taxableIncome: 0,
+              marginalRate: 30,
+              nextBracketRate: 30,
+              roomInBracket: 0,
+              regime: 'new',
+              usingSalaryRate: false,
+            })
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load salary data:', e)
+      }
+    }
+
+    loadSalaryData()
+    // Re-check when window gains focus (in case user filled salary calc in another tab)
+    window.addEventListener('focus', loadSalaryData)
+    return () => window.removeEventListener('focus', loadSalaryData)
+  }, [])
+
   // Calculate results
   const result = useMemo(() => calculateCapitalGains(property), [property])
-  const exemptions = useMemo(() => calculateExemptions(property, result, section54Projection), [property, result, section54Projection])
+
+  // Prepare salary data for split-bracket calculations
+  const salaryDataForCalc: SalaryDataForCalc | undefined = useMemo(() => {
+    if (!salaryData.usingSalaryRate) return undefined
+    return {
+      usingSalaryRate: true,
+      taxableIncome: salaryData.taxableIncome,
+      regime: salaryData.regime,
+    }
+  }, [salaryData.usingSalaryRate, salaryData.taxableIncome, salaryData.regime])
+
+  const exemptions = useMemo(
+    () => calculateExemptions(property, result, section54Projection, salaryDataForCalc),
+    [property, result, section54Projection, salaryDataForCalc]
+  )
 
   // Calculate original property CAGR for reference
   const originalCAGR = useMemo(() => {
@@ -711,7 +963,19 @@ const RealEstateCalculator = forwardRef<RealEstateCalculatorRef>(function RealEs
     const bondLockIn = 5
     const bondInterest = Math.round(bondsAmount * (bondInterestRate / 100) * bondLockIn)
     const bondMaturityValue = bondsAmount + bondInterest
-    const bondTaxOnInterest = Math.round(bondInterest * (section54Projection.taxSlab / 100) * 1.04)
+
+    // Bond interest tax (with split-bracket if salary data available)
+    let bondTaxOnInterest: number
+    if (salaryDataForCalc?.usingSalaryRate && bondInterest > 0) {
+      const bondTaxResult = calculateSplitBracketTax({
+        additionalIncome: bondInterest,
+        currentTaxableIncome: salaryDataForCalc.taxableIncome,
+        regime: salaryDataForCalc.regime,
+      })
+      bondTaxOnInterest = bondTaxResult.tax
+    } else {
+      bondTaxOnInterest = Math.round(bondInterest * (section54Projection.taxSlab / 100) * 1.04)
+    }
     const bondNetValue = bondMaturityValue - bondTaxOnInterest
 
     // Real estate projections
@@ -723,7 +987,19 @@ const RealEstateCalculator = forwardRef<RealEstateCalculatorRef>(function RealEs
       ? reinvestmentAllocation.realEstate.monthlyRent * reRentMonths
       : 0
     const reTotalReturns = reCapitalAppreciation + reTotalRental
-    const reTaxOnRent = Math.round(reTotalRental * (section54Projection.taxSlab / 100) * 1.04)
+
+    // Rental income tax (with split-bracket if salary data available)
+    let reTaxOnRent: number
+    if (salaryDataForCalc?.usingSalaryRate && reTotalRental > 0) {
+      const rentalTaxResult = calculateSplitBracketTax({
+        additionalIncome: reTotalRental,
+        currentTaxableIncome: salaryDataForCalc.taxableIncome,
+        regime: salaryDataForCalc.regime,
+      })
+      reTaxOnRent = rentalTaxResult.tax
+    } else {
+      reTaxOnRent = Math.round(reTotalRental * (section54Projection.taxSlab / 100) * 1.04)
+    }
     const reTaxOnAppreciation = reCapitalAppreciation > 0
       ? Math.round(reCapitalAppreciation * 0.125 * 1.04)
       : 0
@@ -764,7 +1040,7 @@ const RealEstateCalculator = forwardRef<RealEstateCalculatorRef>(function RealEs
       },
       totalProjectedValue,
     }
-  }, [activeRegimeValues.netProceeds, reinvestmentAllocation, section54Projection.taxSlab])
+  }, [activeRegimeValues.netProceeds, reinvestmentAllocation, section54Projection.taxSlab, salaryDataForCalc])
 
   // Update allocation amounts when net proceeds change
   useEffect(() => {
@@ -981,30 +1257,129 @@ const RealEstateCalculator = forwardRef<RealEstateCalculatorRef>(function RealEs
     handleClear,
   }))
 
+  // Handle using salary rate
+  const handleUseSalaryRate = () => {
+    if (salaryData.available) {
+      setSection54Projection(prev => ({ ...prev, taxSlab: salaryData.marginalRate }))
+      setSalaryData(prev => ({ ...prev, usingSalaryRate: true }))
+    }
+  }
+
+  // Handle manual slab selection
+  const handleSlabSelect = (value: number) => {
+    setSection54Projection(prev => ({ ...prev, taxSlab: value }))
+    setSalaryData(prev => ({ ...prev, usingSalaryRate: false }))
+  }
+
   return (
     <div className="space-y-4">
       {/* Income Tax Slab Selector */}
       <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-xl p-3">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="flex flex-col gap-3">
           <div>
             <div className="text-xs font-semibold text-purple-700">Your Income Tax Slab</div>
-            <div className="text-[10px] text-purple-500">Used for calculating tax on rental income & FD interest</div>
+            <div className="text-[10px] text-purple-500">For calculating tax on rental income & FD interest from reinvestments</div>
           </div>
-          <div className="flex flex-wrap gap-1">
-            {TAX_SLABS.map((slab) => (
-              <button
-                key={slab.value}
-                onClick={() => setSection54Projection(prev => ({ ...prev, taxSlab: slab.value }))}
-                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
-                  section54Projection.taxSlab === slab.value
-                    ? 'bg-purple-600 text-white shadow-sm'
-                    : 'bg-white text-slate-600 hover:bg-purple-100 border border-slate-200'
-                }`}
-                title={slab.description}
+
+          {/* Option 1: From Salary Breakdown Calculator (Recommended) */}
+          <div className="bg-white rounded-lg border border-purple-200 p-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm">💼</span>
+                <span className="text-xs font-semibold text-slate-700">From Salary Breakdown</span>
+                <span className="text-[9px] bg-green-100 text-green-600 px-1.5 py-0.5 rounded font-medium">Recommended</span>
+              </div>
+              <a
+                href="/workspace?calc=salary"
+                className="text-[10px] text-blue-600 hover:text-blue-700 hover:underline font-medium"
               >
-                {slab.label}
-              </button>
-            ))}
+                {salaryData.available ? 'Verify/Edit →' : 'Fill Details →'}
+              </a>
+            </div>
+
+            {salaryData.available ? (
+              <div className="space-y-2">
+                <button
+                  onClick={handleUseSalaryRate}
+                  className={`w-full flex items-center justify-between px-3 py-2 text-xs font-medium rounded-lg transition-all ${
+                    salaryData.usingSalaryRate
+                      ? 'bg-green-600 text-white shadow-sm ring-2 ring-green-300'
+                      : 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-300'
+                  }`}
+                >
+                  <span>Use slab from Salary Breakdown</span>
+                  <span className="font-bold">{salaryData.marginalRate}% → {salaryData.nextBracketRate > salaryData.marginalRate ? `${salaryData.nextBracketRate}%` : 'Max'}</span>
+                </button>
+
+                {/* Bracket details always visible when salary data available */}
+                <div className="bg-slate-50 rounded-lg p-2 text-[10px] space-y-1.5">
+                  <div className="grid grid-cols-2 gap-2 text-slate-600">
+                    <div>
+                      <span className="text-slate-400">Taxable Income:</span>{' '}
+                      <span className="font-semibold">₹{formatNumber(salaryData.taxableIncome)}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400">Regime:</span>{' '}
+                      <span className="font-semibold">{salaryData.regime === 'new' ? 'New' : 'Old'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400">Current Bracket:</span>{' '}
+                      <span className="font-semibold text-green-600">{salaryData.marginalRate}%</span>
+                    </div>
+                    {salaryData.roomInBracket < Infinity && salaryData.roomInBracket > 0 ? (
+                      <div>
+                        <span className="text-slate-400">Room left:</span>{' '}
+                        <span className="font-semibold text-blue-600">₹{formatNumber(salaryData.roomInBracket)}</span>
+                      </div>
+                    ) : (
+                      <div>
+                        <span className="text-slate-400">Status:</span>{' '}
+                        <span className="font-semibold text-orange-600">At max bracket</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {salaryData.roomInBracket < Infinity && salaryData.roomInBracket > 0 && salaryData.nextBracketRate > salaryData.marginalRate && (
+                    <div className="pt-1.5 border-t border-slate-200 text-amber-700 flex items-start gap-1">
+                      <span>⚠️</span>
+                      <span>
+                        <strong>Split-bracket applies:</strong> First ₹{formatNumber(salaryData.roomInBracket)} of additional income taxed at {salaryData.marginalRate}%,
+                        remainder at {salaryData.nextBracketRate}%. Calculations below use this split logic.
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-3 text-slate-400 text-xs">
+                <p>No salary data found.</p>
+                <a href="/workspace?calc=salary" className="text-blue-600 hover:underline font-medium">
+                  Go to Salary Breakdown Calculator →
+                </a>
+                <p className="text-[10px] mt-1">Enter your CTC to auto-detect your tax bracket</p>
+              </div>
+            )}
+          </div>
+
+          {/* Option 2: Manual slab selection */}
+          <div>
+            <div className="text-[10px] text-slate-500 mb-1.5">Or select manually (single rate, no split):</div>
+            <div className="flex flex-wrap gap-1">
+              {TAX_SLABS.map((slab) => (
+                <button
+                  key={slab.value}
+                  onClick={() => handleSlabSelect(slab.value)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                    section54Projection.taxSlab === slab.value && !salaryData.usingSalaryRate
+                      ? 'bg-purple-600 text-white shadow-sm'
+                      : 'bg-white text-slate-600 hover:bg-purple-100 border border-slate-200'
+                  }`}
+                  title={slab.description}
+                >
+                  {slab.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -1558,7 +1933,7 @@ const RealEstateCalculator = forwardRef<RealEstateCalculatorRef>(function RealEs
                       <div className="text-[10px] font-semibold text-blue-700 uppercase mb-2">
                         Projected Returns @ {allocationCalculations.bonds.interestRate}% p.a. (5 years)
                       </div>
-                      <div className="grid grid-cols-4 gap-2 text-xs">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                         <div className="text-center">
                           <div className="text-[9px] text-blue-600">Invested</div>
                           <div className="font-mono font-semibold">₹{formatCompact(allocationCalculations.bondsAmount)}</div>

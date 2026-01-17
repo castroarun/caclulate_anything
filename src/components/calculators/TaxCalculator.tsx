@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
+import { useNumberFormat } from '@/contexts/NumberFormatContext'
 
 interface TaxResult {
   grossIncome: number
@@ -34,7 +35,8 @@ function formatIndianNumber(num: number): string {
   return result
 }
 
-function formatCompact(num: number): string {
+// Static format for exports (always Indian)
+function formatCompactStatic(num: number): string {
   if (num >= 10000000) return `₹${(num / 10000000).toFixed(2)}Cr`
   if (num >= 100000) return `₹${(num / 100000).toFixed(2)}L`
   if (num >= 1000) return `₹${(num / 1000).toFixed(1)}K`
@@ -127,6 +129,7 @@ export interface TaxCalculatorRef {
 }
 
 const TaxCalculator = forwardRef<TaxCalculatorRef>(function TaxCalculator(props, ref) {
+  const { formatCurrencyCompact } = useNumberFormat()
   const [grossIncome, setGrossIncome] = useState(1200000)
   const [section80C, setSection80C] = useState(150000)
   const [section80D, setSection80D] = useState(25000)
@@ -478,7 +481,7 @@ const TaxCalculator = forwardRef<TaxCalculatorRef>(function TaxCalculator(props,
                   Old Regime
                 </div>
                 <div className="font-mono text-lg font-bold text-slate-900">
-                  {formatCompact(result.taxOldRegime)}
+                  {formatCurrencyCompact(result.taxOldRegime)}
                 </div>
                 {result.recommendation === 'old' && (
                   <div className="text-[9px] text-green-600 font-medium mt-1">✓ Better</div>
@@ -489,7 +492,7 @@ const TaxCalculator = forwardRef<TaxCalculatorRef>(function TaxCalculator(props,
                   New Regime
                 </div>
                 <div className="font-mono text-lg font-bold text-slate-900">
-                  {formatCompact(result.taxNewRegime)}
+                  {formatCurrencyCompact(result.taxNewRegime)}
                 </div>
                 {result.recommendation === 'new' && (
                   <div className="text-[9px] text-green-600 font-medium mt-1">✓ Better</div>
@@ -501,15 +504,15 @@ const TaxCalculator = forwardRef<TaxCalculatorRef>(function TaxCalculator(props,
             <div className="bg-white rounded-lg p-4 text-xs space-y-2">
               <div className="flex justify-between">
                 <span className="text-slate-600">Gross Income</span>
-                <span className="font-mono font-medium">{formatCompact(grossIncome)}</span>
+                <span className="font-mono font-medium">{formatCurrencyCompact(grossIncome)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-600">Total Deductions (Old)</span>
-                <span className="font-mono font-medium text-green-600">-{formatCompact(result.totalDeductions)}</span>
+                <span className="font-mono font-medium text-green-600">-{formatCurrencyCompact(result.totalDeductions)}</span>
               </div>
               <div className="flex justify-between border-t border-slate-100 pt-2">
                 <span className="text-slate-700 font-medium">Taxable Income (Old)</span>
-                <span className="font-mono font-semibold">{formatCompact(result.taxableIncome)}</span>
+                <span className="font-mono font-semibold">{formatCurrencyCompact(result.taxableIncome)}</span>
               </div>
             </div>
           </div>

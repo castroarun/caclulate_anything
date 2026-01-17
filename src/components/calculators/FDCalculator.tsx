@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
+import { useNumberFormat } from '@/contexts/NumberFormatContext'
 
 // ============ Interfaces ============
 
@@ -48,7 +49,8 @@ function formatIndianNumber(num: number): string {
   return result
 }
 
-function formatCompact(num: number): string {
+// Static format for exports (always Indian)
+function formatCompactStatic(num: number): string {
   if (num >= 10000000) return `₹${(num / 10000000).toFixed(2)}Cr`
   if (num >= 100000) return `₹${(num / 100000).toFixed(2)}L`
   if (num >= 1000) return `₹${(num / 1000).toFixed(1)}K`
@@ -201,6 +203,7 @@ export interface FDCalculatorRef {
 }
 
 const FDCalculator = forwardRef<FDCalculatorRef>(function FDCalculator(props, ref) {
+  const { formatCurrencyCompact } = useNumberFormat()
   // State
   const [mode, setMode] = useState<'calculate' | 'target'>('calculate')
   const [principal, setPrincipal] = useState(500000)
@@ -366,13 +369,13 @@ const FDCalculator = forwardRef<FDCalculatorRef>(function FDCalculator(props, re
             <span class="year-label">Y${y.year}</span>
             <div class="bar-container" style="width: ${barWidth}%">
               <div class="bar-principal" style="width: ${principalWidth}%">
-                ${principalWidth > 20 ? `<span>${formatCompact(principal)}</span>` : ''}
+                ${principalWidth > 20 ? `<span>${formatCurrencyCompact(principal)}</span>` : ''}
               </div>
               <div class="bar-interest" style="width: ${interestWidth}%">
-                ${interestWidth > 15 ? `<span>${formatCompact(y.interest)}</span>` : ''}
+                ${interestWidth > 15 ? `<span>${formatCurrencyCompact(y.interest)}</span>` : ''}
               </div>
             </div>
-            <span class="balance-label">${formatCompact(y.balance)}</span>
+            <span class="balance-label">${formatCurrencyCompact(y.balance)}</span>
           </div>
         `
       })
@@ -889,7 +892,7 @@ const FDCalculator = forwardRef<FDCalculatorRef>(function FDCalculator(props, re
                           : 'border-slate-200 text-slate-500 hover:border-green-300'
                       }`}
                     >
-                      {formatCompact(amt).replace('₹', '')}
+                      {formatCurrencyCompact(amt).replace('₹', '')}
                     </button>
                   ))}
                 </div>
@@ -1049,7 +1052,7 @@ const FDCalculator = forwardRef<FDCalculatorRef>(function FDCalculator(props, re
                   {mode === 'calculate' ? 'Principal' : 'Target'}
                 </div>
                 <div className="font-mono text-sm font-semibold text-slate-900">
-                  {mode === 'calculate' ? formatCompact(principal) : formatCompact(targetMaturity)}
+                  {mode === 'calculate' ? formatCurrencyCompact(principal) : formatCurrencyCompact(targetMaturity)}
                 </div>
               </div>
               <div className="bg-white rounded-lg p-3 text-center">
@@ -1057,7 +1060,7 @@ const FDCalculator = forwardRef<FDCalculatorRef>(function FDCalculator(props, re
                   Interest
                 </div>
                 <div className="font-mono text-sm font-semibold text-slate-900">
-                  {formatCompact(result.totalInterest)}
+                  {formatCurrencyCompact(result.totalInterest)}
                 </div>
               </div>
               <div className="bg-white rounded-lg p-3 text-center">
@@ -1176,7 +1179,7 @@ const FDCalculator = forwardRef<FDCalculatorRef>(function FDCalculator(props, re
                     >
                       {principalWidth > 25 && (
                         <span className="text-[9px] text-white font-medium">
-                          {formatCompact(principal)}
+                          {formatCurrencyCompact(principal)}
                         </span>
                       )}
                     </div>
@@ -1186,13 +1189,13 @@ const FDCalculator = forwardRef<FDCalculatorRef>(function FDCalculator(props, re
                     >
                       {interestWidth > 15 && (
                         <span className="text-[9px] text-white font-medium">
-                          {formatCompact(year.interest)}
+                          {formatCurrencyCompact(year.interest)}
                         </span>
                       )}
                     </div>
                   </div>
                   <span className="text-[10px] text-slate-600 w-20 text-right font-mono">
-                    {formatCompact(year.balance)}
+                    {formatCurrencyCompact(year.balance)}
                   </span>
                 </div>
               )

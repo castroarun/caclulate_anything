@@ -195,6 +195,7 @@ const SalaryCalculator = forwardRef<SalaryCalculatorRef>(function SalaryCalculat
   const [notes, setNotes] = useState('')
   const [showNotes, setShowNotes] = useState(false)
   const [showComparison, setShowComparison] = useState(false)
+  const [userModified, setUserModified] = useState(false) // Tracks if user has explicitly modified values
   const calculatorRef = useRef<HTMLDivElement>(null)
 
   // Load from localStorage
@@ -211,6 +212,7 @@ const SalaryCalculator = forwardRef<SalaryCalculatorRef>(function SalaryCalculat
       setProfessionalTax(data.professionalTax || 200)
       setTaxRegime(data.taxRegime || 'new')
       setNotes(data.notes || '')
+      setUserModified(data.userModified || false)
     }
     setIsLoaded(true)
   }, [])
@@ -218,10 +220,10 @@ const SalaryCalculator = forwardRef<SalaryCalculatorRef>(function SalaryCalculat
   // Auto-save to localStorage
   useEffect(() => {
     if (!isLoaded) return
-    const data = { ctc, basicPercent, hraPercent, pfPercent, professionalTax, taxRegime, notes }
+    const data = { ctc, basicPercent, hraPercent, pfPercent, professionalTax, taxRegime, notes, userModified }
     localStorage.setItem('calc_salary', JSON.stringify(data))
     setLastSaved(new Date().toLocaleTimeString())
-  }, [ctc, basicPercent, hraPercent, pfPercent, professionalTax, taxRegime, notes, isLoaded])
+  }, [ctc, basicPercent, hraPercent, pfPercent, professionalTax, taxRegime, notes, userModified, isLoaded])
 
   const handleClear = () => {
     setCtc(1200000)
@@ -437,6 +439,7 @@ const SalaryCalculator = forwardRef<SalaryCalculatorRef>(function SalaryCalculat
                       const val = Number(e.target.value.replace(/,/g, ''))
                       if (!isNaN(val) && val >= 0) {
                         setCtc(Math.min(val, 100000000)) // Cap at 10Cr for sanity
+                        setUserModified(true)
                       }
                     }}
                     onFocus={() => {
@@ -449,6 +452,7 @@ const SalaryCalculator = forwardRef<SalaryCalculatorRef>(function SalaryCalculat
                       const val = Number(ctcInput.replace(/,/g, ''))
                       if (!isNaN(val) && val > 0) {
                         setCtc(Math.min(val, 100000000))
+                        setUserModified(true)
                       }
                     }}
                     className="font-mono text-base font-semibold text-slate-900 w-32 text-right bg-transparent border-b border-dashed border-slate-300 focus:border-orange-500 focus:outline-none"
@@ -466,6 +470,7 @@ const SalaryCalculator = forwardRef<SalaryCalculatorRef>(function SalaryCalculat
                   const val = Number(e.target.value)
                   setCtc(val)
                   setCtcInput(val.toString())
+                  setUserModified(true)
                 }}
                 className="w-full h-1 bg-slate-200 rounded-full appearance-none cursor-pointer accent-orange-600"
               />
@@ -481,6 +486,7 @@ const SalaryCalculator = forwardRef<SalaryCalculatorRef>(function SalaryCalculat
                     onClick={() => {
                       setCtc(amount)
                       setCtcInput(amount.toString())
+                      setUserModified(true)
                     }}
                     className={`px-2 py-1 text-[10px] rounded-full border transition-colors ${
                       ctc === amount
