@@ -22,6 +22,11 @@ interface SyncResult {
  * Push all localStorage calculator data to Supabase
  */
 export async function pushToCloud(userId: string): Promise<SyncResult> {
+  // Safety check - only run on client
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return { success: false, error: 'Not in browser environment' }
+  }
+
   const supabase = createClient()
   let syncedCount = 0
 
@@ -80,6 +85,11 @@ export async function pushToCloud(userId: string): Promise<SyncResult> {
  * Pull all calculator data from Supabase to localStorage
  */
 export async function pullFromCloud(userId: string): Promise<SyncResult> {
+  // Safety check - only run on client
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return { success: false, error: 'Not in browser environment' }
+  }
+
   const supabase = createClient()
   let syncedCount = 0
 
@@ -128,20 +138,44 @@ export async function pullFromCloud(userId: string): Promise<SyncResult> {
 /**
  * Sync on login: Pull cloud data (cloud wins on conflicts)
  * Then push any local-only data to cloud
+ *
+ * Note: This is a best-effort sync. If tables don't exist or there are
+ * network issues, the app continues to work with localStorage only.
  */
 export async function syncOnLogin(userId: string): Promise<SyncResult> {
+  // Safety check - only run on client
+  if (typeof window === 'undefined') {
+    return { success: false, error: 'Not in browser environment' }
+  }
+
   try {
     // First, push local data to cloud (ensures nothing is lost)
-    await pushToCloud(userId)
+    // This may fail if tables don't exist yet - that's OK
+    try {
+      await pushToCloud(userId)
+    } catch (pushError) {
+      console.warn('Push to cloud skipped:', pushError)
+    }
 
     // Then pull cloud data (cloud wins, overwrites local)
-    const result = await pullFromCloud(userId)
+    // This may also fail if tables don't exist - that's OK
+    let result: SyncResult = { success: true, syncedCalculators: 0 }
+    try {
+      result = await pullFromCloud(userId)
+    } catch (pullError) {
+      console.warn('Pull from cloud skipped:', pullError)
+    }
 
-    // Dispatch event so UI can refresh
-    window.dispatchEvent(new CustomEvent('calculator-sync-complete'))
+    // Dispatch event so UI can refresh (safely)
+    try {
+      window.dispatchEvent(new CustomEvent('calculator-sync-complete'))
+    } catch {
+      // Ignore dispatch errors
+    }
 
     return result
   } catch (error) {
+    // Never let sync errors crash the app
     console.error('Sync on login failed:', error)
     return { success: false, error: String(error) }
   }
