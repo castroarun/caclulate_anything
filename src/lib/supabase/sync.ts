@@ -1,5 +1,18 @@
 import { createClient } from './client'
 
+/**
+ * Safely parse JSON, returning null on failure
+ */
+function safeJsonParse<T>(str: string | null): T | null {
+  if (!str) return null
+  try {
+    return JSON.parse(str) as T
+  } catch {
+    console.warn('Failed to parse JSON:', str.substring(0, 100))
+    return null
+  }
+}
+
 // All calculator localStorage keys
 const CALCULATOR_KEYS = [
   'calc_emi', 'calc_sip', 'calc_fd', 'calc_rd', 'calc_ppf', 'calc_epf',
@@ -33,15 +46,16 @@ export async function pushToCloud(userId: string): Promise<SyncResult> {
   try {
     // Push calculator data
     for (const key of CALCULATOR_KEYS) {
-      const data = localStorage.getItem(key)
-      if (data) {
+      const rawData = localStorage.getItem(key)
+      const parsedData = safeJsonParse(rawData)
+      if (parsedData) {
         const calculatorId = key.replace('calc_', '')
         const { error } = await supabase
           .from('user_calculator_data')
           .upsert({
             user_id: userId,
             calculator_id: calculatorId,
-            data: JSON.parse(data),
+            data: parsedData,
             updated_at: new Date().toISOString()
           }, {
             onConflict: 'user_id,calculator_id'
@@ -56,7 +70,8 @@ export async function pushToCloud(userId: string): Promise<SyncResult> {
     }
 
     // Push preferences
-    const favorites = localStorage.getItem(FAVORITES_KEY)
+    const rawFavorites = localStorage.getItem(FAVORITES_KEY)
+    const favorites = safeJsonParse<string[]>(rawFavorites)
     const format = localStorage.getItem(FORMAT_KEY)
 
     const { error: prefError } = await supabase
@@ -64,7 +79,7 @@ export async function pushToCloud(userId: string): Promise<SyncResult> {
       .upsert({
         user_id: userId,
         number_format: format || 'IN',
-        favorites: favorites ? JSON.parse(favorites) : [],
+        favorites: favorites || [],
         updated_at: new Date().toISOString()
       }, {
         onConflict: 'user_id'
