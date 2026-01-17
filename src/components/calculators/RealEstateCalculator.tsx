@@ -600,8 +600,8 @@ function calculateExemptions(
     'Bonds: NHAI, REC, PFC, IRFC',
   ]
   if (remainingGain > 0) {
-    bondNotes.push(`Remaining ₹${formatIndianNumber(remainingGain)} capital gain taxed at ${result.taxRate}%`)
-    bondNotes.push(`Surplus ₹${formatIndianNumber(remainingCash)} assumed in FD @${fdRate}% for 5 years`)
+    bondNotes.push(`Remaining ₹${remainingGain.toLocaleString('en-IN')} capital gain taxed at ${result.taxRate}%`)
+    bondNotes.push(`Surplus ₹${remainingCash.toLocaleString('en-IN')} assumed in FD @${fdRate}% for 5 years`)
   }
 
   strategies.push({
