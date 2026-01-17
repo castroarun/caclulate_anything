@@ -132,7 +132,15 @@ interface ExemptionStrategy {
     taxOnRentalIncome: number // Tax on rental income at slab rate
     taxOnAppreciation: number // LTCG tax on property appreciation (12.5%)
     totalTaxOnReturns: number // Total tax on returns
-    netCashInHand: number // Final amount after all taxes
+    // Remaining cash invested in FD (Section 54)
+    remainingCash?: number // Cash not invested in property
+    fdRate?: number // FD interest rate assumption
+    fdInterest?: number // FD interest earned over lock-in period
+    fdMaturityValue?: number // FD principal + interest
+    taxOnFdInterest?: number // Tax on FD interest at slab rate
+    netFdMaturityValue?: number // Net FD returns after tax
+    // Total
+    netCashInHand: number // Final amount after all taxes (property + FD)
     comparisonWithoutExemption: {
       taxPaid: number
       investedAmount: number // After-tax amount if invested elsewhere
@@ -463,8 +471,35 @@ function calculateExemptions(
       ? Math.round(capitalAppreciation * 0.125 * (1 + cessRate))
       : 0
     const totalTaxOnReturns = taxOnRentalIncome + taxOnAppreciation
-    // Net cash in hand = Investment + Returns - Taxes on returns
-    const netCashInHand = investmentAmount + totalReturns - totalTaxOnReturns
+    // Net property value after selling = Projected value - taxes on returns
+    const netPropertyValue = projectedPropertyValue - totalTaxOnReturns + totalRentalIncome - taxOnRentalIncome
+
+    // Remaining cash after property investment (this goes to FD)
+    // Since capital gains is exempt when reinvested, remaining = netSaleConsideration - capitalGains
+    const remainingCash54 = Math.max(0, result.netSaleConsideration - investmentAmount)
+
+    // FD calculations for remaining cash (assume 7% compound interest rate, same as 54EC)
+    const fdRate54 = 7
+    const fdInterest54 = Math.round(remainingCash54 * (Math.pow(1 + fdRate54 / 100, lockInYears) - 1))
+    const fdMaturityValue54 = remainingCash54 + fdInterest54
+
+    // Tax on FD interest at slab rate
+    let taxOnFdInterest54: number
+    if (salaryDataForCalc?.usingSalaryRate && fdInterest54 > 0) {
+      const fdTaxResult = calculateSplitBracketTax({
+        additionalIncome: fdInterest54,
+        currentTaxableIncome: salaryDataForCalc.taxableIncome,
+        regime: salaryDataForCalc.regime,
+      })
+      taxOnFdInterest54 = fdTaxResult.tax
+    } else {
+      const taxSlab = projectionState.taxSlab / 100
+      taxOnFdInterest54 = Math.round(fdInterest54 * taxSlab * (1 + cessRate))
+    }
+    const netFdMaturityValue54 = fdMaturityValue54 - taxOnFdInterest54
+
+    // Total net cash in hand = Property value (after appreciation & taxes) + FD maturity (after tax)
+    const netCashInHand = netPropertyValue + netFdMaturityValue54
 
     // Comparison: What if you paid tax and invested the remaining in FD/debt fund
     const comparisonTaxPaid = result.totalTax
@@ -487,6 +522,18 @@ function calculateExemptions(
     }
     const netFDReturns = returnAt8Percent - taxOnFDReturns
 
+    // Build notes array for Section 54
+    const sec54Notes = [
+      'Purchase within 1 year before or 2 years after sale',
+      'Or construct within 3 years of sale',
+      'Only ONE new residential property allowed',
+      'Lock-in period: 3 years (cannot sell new property)',
+      'Max exemption: ₹10 Crore (from AY 2024-25)',
+    ]
+    if (remainingCash54 > 0) {
+      sec54Notes.push(`Surplus ₹${remainingCash54.toLocaleString('en-IN')} assumed in FD @${fdRate54}% for ${lockInYears} years`)
+    }
+
     strategies.push({
       section: '54',
       name: 'Buy New Residential Property',
@@ -497,13 +544,7 @@ function calculateExemptions(
       deadline,
       lockInYears,
       isEligible: true,
-      notes: [
-        'Purchase within 1 year before or 2 years after sale',
-        'Or construct within 3 years of sale',
-        'Only ONE new residential property allowed',
-        'Lock-in period: 3 years (cannot sell new property)',
-        'Max exemption: ₹10 Crore (from AY 2024-25)',
-      ],
+      notes: sec54Notes,
       propertyProjection: {
         originalPropertyCAGR: originalCAGR,
         appreciationRate,
@@ -519,6 +560,14 @@ function calculateExemptions(
         taxOnRentalIncome,
         taxOnAppreciation,
         totalTaxOnReturns,
+        // Remaining cash in FD
+        remainingCash: remainingCash54,
+        fdRate: fdRate54,
+        fdInterest: fdInterest54,
+        fdMaturityValue: fdMaturityValue54,
+        taxOnFdInterest: taxOnFdInterest54,
+        netFdMaturityValue: netFdMaturityValue54,
+        // Total net cash in hand (property + FD)
         netCashInHand,
         comparisonWithoutExemption: {
           taxPaid: comparisonTaxPaid,
