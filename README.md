@@ -28,6 +28,24 @@
   <a href="#-contributing">Contributing</a>
 </p>
 
+<!-- LAUNCHPAD:START -->
+```json
+{
+  "stage": "live",
+  "progress": 100,
+  "complexity": "F",
+  "lastUpdated": "2026-01-17",
+  "targetDate": null,
+  "nextAction": "Add more calculators based on feedback",
+  "blocker": null,
+  "demoUrl": "https://anycalculator-seven.vercel.app",
+  "techStack": ["Next.js", "TypeScript", "Tailwind CSS"],
+  "shipped": true,
+  "linkedinPosted": false
+}
+```
+<!-- LAUNCHPAD:END -->
+
 ---
 
 ## Features
