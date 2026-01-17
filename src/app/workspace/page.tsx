@@ -498,31 +498,6 @@ function WorkspaceContent() {
                 >
                   {favorites.includes(activeCalc) ? '★' : '☆'}
                 </button>
-                {/* Export dropdown for all calculators */}
-                <div className="flex items-center gap-1 mr-2">
-                  <span className="text-[10px] text-slate-400">Export:</span>
-                  <button
-                    onClick={() => calculatorRef.current?.exportToPDF?.()}
-                    className="px-2 py-1 text-[10px] font-medium text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                    title="Export as PDF"
-                  >
-                    PDF
-                  </button>
-                  <button
-                    onClick={() => calculatorRef.current?.exportToHTML?.()}
-                    className="px-2 py-1 text-[10px] font-medium text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                    title="Export as HTML"
-                  >
-                    HTML
-                  </button>
-                  <button
-                    onClick={() => calculatorRef.current?.exportToExcel?.()}
-                    className="px-2 py-1 text-[10px] font-medium text-slate-500 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
-                    title="Export as CSV/Excel"
-                  >
-                    CSV
-                  </button>
-                </div>
                 <button
                   onClick={handleClearCalculator}
                   className="px-3 py-1.5 text-xs text-slate-500 hover:text-red-500 bg-white border border-slate-200 rounded-md hover:border-red-200 hover:bg-red-50 transition-colors"
