@@ -24,7 +24,7 @@ export default function LandingPage() {
               <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center text-white text-sm font-bold">
                 C
               </div>
-              <span className="font-display font-bold text-slate-900">Calci</span>
+              <span className="font-display font-bold text-slate-900">AnyCalc</span>
             </Link>
             <div className="flex items-center gap-1">
               <Link
@@ -117,7 +117,7 @@ export default function LandingPage() {
       <footer className="py-8 px-4 border-t border-slate-200 mt-12">
         <div className="max-w-5xl mx-auto text-center">
           <p className="text-sm text-slate-500">
-            Calci — Calculate everything. Plan anything.
+            AnyCalc — Calculate everything. Plan anything.
           </p>
         </div>
       </footer>

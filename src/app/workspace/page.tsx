@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { useNumberFormat } from '@/contexts/NumberFormatContext'
 import EMICalculator from '@/components/calculators/EMICalculator'
 import SIPCalculator from '@/components/calculators/SIPCalculator'
 import FDCalculator from '@/components/calculators/FDCalculator'
@@ -21,6 +22,8 @@ import WorldClock from '@/components/calculators/WorldClock'
 import COLCalculator from '@/components/calculators/COLCalculator'
 import TripCalculator from '@/components/calculators/TripCalculator'
 import CurrencyConverter from '@/components/calculators/CurrencyConverter'
+import RealEstateCalculator from '@/components/calculators/RealEstateCalculator'
+import BMICalculator from '@/components/calculators/BMICalculator'
 
 // Calculator definitions with accent colors
 const CALCULATOR_GROUPS = [
@@ -44,6 +47,7 @@ const CALCULATOR_GROUPS = [
     name: 'Tax & Planning',
     items: [
       { id: 'tax', name: 'Tax Planner', icon: '🧮', accent: 'cyan', accentBg: 'bg-cyan-50', accentText: 'text-cyan-600', accentBorder: 'border-cyan-200' },
+      { id: 'realestate', name: 'Real Estate CG', icon: '🏡', accent: 'purple', accentBg: 'bg-purple-50', accentText: 'text-purple-600', accentBorder: 'border-purple-200' },
       { id: 'salary', name: 'Salary Breakdown', icon: '💼', accent: 'orange', accentBg: 'bg-orange-50', accentText: 'text-orange-600', accentBorder: 'border-orange-200' },
       { id: 'goal', name: 'Goal Planner', icon: '🎯', accent: 'pink', accentBg: 'bg-pink-50', accentText: 'text-pink-600', accentBorder: 'border-pink-200' },
     ],
@@ -57,6 +61,12 @@ const CALCULATOR_GROUPS = [
       { id: 'currency', name: 'Currency Converter', icon: '💱', accent: 'cyan', accentBg: 'bg-cyan-50', accentText: 'text-cyan-600', accentBorder: 'border-cyan-200' },
     ],
   },
+  {
+    name: 'Health & Fitness',
+    items: [
+      { id: 'bmi', name: 'BMI Calculator', icon: '⚖️', accent: 'pink', accentBg: 'bg-pink-50', accentText: 'text-pink-600', accentBorder: 'border-pink-200' },
+    ],
+  },
 ]
 
 // Get all calculators flat
@@ -64,6 +74,7 @@ const ALL_CALCULATORS = CALCULATOR_GROUPS.flatMap((g) => g.items)
 
 function WorkspaceContent() {
   const searchParams = useSearchParams()
+  const { format, setFormat } = useNumberFormat()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [activeCalc, setActiveCalc] = useState('emi')
@@ -162,13 +173,38 @@ function WorkspaceContent() {
             <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center text-white text-xs font-bold">
               C
             </div>
-            <span className="font-display font-bold text-slate-900 text-sm">Calci</span>
+            <span className="font-display font-bold text-slate-900 text-sm">AnyCalc</span>
           </Link>
           <span className="text-slate-400 text-sm border-l border-slate-200 pl-4 hidden sm:inline">
             Workspace
           </span>
         </div>
         <div className="flex items-center gap-2 md:gap-3">
+          {/* Number Format Toggle */}
+          <div className="flex items-center bg-slate-100 rounded-lg p-0.5">
+            <button
+              onClick={() => setFormat('indian')}
+              className={`px-2 py-1 text-[10px] font-medium rounded-md transition-all ${
+                format === 'indian'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+              title="Indian format (1,00,000)"
+            >
+              IN
+            </button>
+            <button
+              onClick={() => setFormat('international')}
+              className={`px-2 py-1 text-[10px] font-medium rounded-md transition-all ${
+                format === 'international'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+              title="International format (100,000)"
+            >
+              US
+            </button>
+          </div>
           <button
             onClick={handleClearAll}
             className="text-xs text-red-500 hover:text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors hidden sm:block"
@@ -362,6 +398,8 @@ function WorkspaceContent() {
                     {activeCalc === 'col' && 'Compare cost of living between cities'}
                     {activeCalc === 'trip' && 'Plan your travel budget'}
                     {activeCalc === 'currency' && 'Convert between 24+ currencies'}
+                    {activeCalc === 'realestate' && 'Calculate capital gains & plan tax exemptions'}
+                    {activeCalc === 'bmi' && 'Track BMI & plan your fitness goals'}
                   </p>
                 </div>
               </div>
@@ -446,6 +484,8 @@ function WorkspaceContent() {
             {activeCalc === 'col' && <COLCalculator ref={calculatorRef as React.RefObject<{ exportToPDF: () => void; exportToHTML: () => void; exportToExcel: () => void; handleClear: () => void }>} />}
             {activeCalc === 'trip' && <TripCalculator ref={calculatorRef as React.RefObject<{ exportToPDF: () => void; exportToHTML: () => void; exportToExcel: () => void; handleClear: () => void }>} />}
             {activeCalc === 'currency' && <CurrencyConverter ref={calculatorRef as React.RefObject<{ exportToPDF: () => void; exportToHTML: () => void; exportToExcel: () => void; handleClear: () => void }>} />}
+            {activeCalc === 'realestate' && <RealEstateCalculator ref={calculatorRef as React.RefObject<{ exportToPDF: () => void; exportToHTML: () => void; exportToExcel: () => void; handleClear: () => void }>} />}
+            {activeCalc === 'bmi' && <BMICalculator ref={calculatorRef as React.RefObject<{ exportToPDF: () => void; exportToHTML: () => void; exportToExcel: () => void; handleClear: () => void }>} />}
 
             {/* About & Sources - Collapsible */}
             <AboutSources />
@@ -453,7 +493,7 @@ function WorkspaceContent() {
             {/* Footer */}
             <div className="mt-8 pt-4 border-t border-slate-100 text-center">
               <p className="text-xs text-slate-400">
-                Calci — Calculate everything. Plan anything.
+                AnyCalc — Calculate everything. Plan anything.
               </p>
             </div>
           </div>

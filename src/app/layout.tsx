@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter, Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
+import { Providers } from './providers'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -21,7 +22,7 @@ const jetbrains = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Calci - Calculate everything, plan anything',
+  title: 'AnyCalc - Calculate everything, plan anything',
   description: 'Beautifully simple calculators for EMI, SIP, FD, Tax Planning, and more.',
   keywords: ['calculator', 'EMI calculator', 'SIP calculator', 'loan calculator', 'financial planning', 'India'],
 }
@@ -34,7 +35,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${jakarta.variable} ${jetbrains.variable}`}>
       <body className="font-sans antialiased bg-slate-50 text-slate-900">
-        {children}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   )

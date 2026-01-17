@@ -27,14 +27,48 @@
 | Phase | Item | Status | Notes |
 |-------|------|--------|-------|
 | Setup | Project initialized | Done | Folder structure created |
+| Build | 19 Calculator components | Done | EMI, SIP, FD, Compound, Tax, Real Estate CG, etc. |
+| Build | Workspace UI | Done | Sidebar, favorites, export |
+| Build | Dual-mode calculators | Done | EMI, SIP, FD, Compound, CAGR |
+| Build | Real Estate CG Calculator | Done | [Design Doc](./Design/REAL-ESTATE-CG-CALCULATOR-DESIGN.md) |
 | Design | PRD Document | Not Started | - |
-| Design | UI Mockup | Not Started | - |
 | Design | Test Cases | Not Started | - |
+
+---
+
+## Recently Completed
+
+### Real Estate Capital Gains Calculator ✅
+**Route:** `/workspace?calc=realestate`
+**Design Doc:** [REAL-ESTATE-CG-CALCULATOR-DESIGN.md](./Design/REAL-ESTATE-CG-CALCULATOR-DESIGN.md)
+
+A comprehensive calculator for Indian real estate capital gains tax planning:
+- Capital gains computation (STCG/LTCG with indexation)
+- Reinvestment strategy planner (Section 54, 54EC, 54F)
+- Cost Inflation Index (CII) integration (2001-2026)
+- Tax exemption comparison tool
+- Budget 2024 dual-regime support (old: 20% with indexation, new: 12.5% without)
+
+**Status:** ✅ Completed (2026-01-17)
+
+---
+
+## Upcoming Features
+
+### Phase 2 Enhancements (Real Estate Calculator)
+- [ ] Capital Gains Account Scheme (CGAS) tracking
+- [ ] Joint ownership calculator
+- [ ] NRI-specific TDS calculator (20% + surcharge)
+- [ ] DTAA benefits for NRIs
+- [ ] Property portfolio tracker
 
 ---
 
 ## Next Actions
 
+- [x] Review Real Estate CG Calculator design
+- [x] Build Real Estate CG Calculator
+- [ ] Create Jira task for Phase 2 enhancements
 - [ ] Define project requirements (invoke @designer)
 - [ ] Create PRD document
 - [x] Create Jira project and link here
@@ -43,5 +77,6 @@
 
 ---
 
-**Document Version:** 1.0
+**Document Version:** 1.2
 **Created:** 2026-01-09
+**Updated:** 2026-01-17

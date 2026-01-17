@@ -7,7 +7,7 @@
 
 <h1 align="center">
   <br />
-  Calci
+  AnyCalc
   <br />
 </h1>
 
