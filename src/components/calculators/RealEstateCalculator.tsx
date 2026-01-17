@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect, forwardRef, useImperativeHandle } from 'react'
+import React, { useState, useMemo, useEffect, forwardRef, useImperativeHandle } from 'react'
 import { useNumberFormat } from '@/contexts/NumberFormatContext'
 
 // Cost Inflation Index (CII) Data - Base Year 2001-02 = 100
@@ -104,6 +104,16 @@ interface ExemptionStrategy {
     maturityValue: number
     taxOnInterest: number // Interest taxed at slab rate (assuming 30%)
     netMaturityValue: number
+    // Remaining amount calculation (for capital gain > 50L)
+    remainingGain: number // Capital gain beyond 50L exemption
+    taxOnRemainingGain: number // LTCG tax on remaining
+    remainingCash: number // Cash after bond investment and remaining tax
+    fdRate: number // FD interest rate assumption
+    fdInterest: number // FD interest earned over lock-in period
+    fdMaturityValue: number // FD principal + interest
+    taxOnFdInterest: number // Tax on FD interest at slab rate
+    netFdMaturityValue: number // FD after tax
+    totalNetCashInHand: number // Bonds + FD (both after tax)
   }
   // Section 54/54F property projections
   propertyProjection?: {
@@ -537,6 +547,7 @@ function calculateExemptions(
   const maturityValue = maxBondInvestment + totalInterest
   // Interest is taxable at user's slab rate (with split-bracket if salary data available)
   let taxOnInterest: number
+  const userTaxSlab = projectionState.taxSlab / 100
   if (salaryDataForCalc?.usingSalaryRate && totalInterest > 0) {
     // Use split-bracket: bond interest comes on top of salary income
     const interestTaxResult = calculateSplitBracketTax({
@@ -546,10 +557,52 @@ function calculateExemptions(
     })
     taxOnInterest = interestTaxResult.tax
   } else {
-    const userTaxSlab = projectionState.taxSlab / 100
     taxOnInterest = Math.round(totalInterest * userTaxSlab * 1.04) // slab rate + 4% cess
   }
   const netMaturityValue = maturityValue - taxOnInterest
+
+  // Calculate remaining amount (capital gain beyond 50L exemption)
+  const remainingGain = Math.max(0, capitalGain - maxBondInvestment)
+  const taxOnRemainingGain = Math.round(remainingGain * (result.taxRate / 100) * 1.04) // LTCG tax on remaining
+
+  // Cash remaining after bond investment and tax on remaining gain
+  // = Net sale proceeds - Tax on remaining gain - Bond investment
+  const remainingCash = Math.max(0, result.netSaleConsideration - taxOnRemainingGain - maxBondInvestment)
+
+  // FD calculations for remaining cash (assume 7% compound interest rate)
+  const fdRate = 7 // Reasonable FD rate assumption
+  const fdInterest = Math.round(remainingCash * (Math.pow(1 + fdRate / 100, bondLockInYears) - 1))
+  const fdMaturityValue = remainingCash + fdInterest
+
+  // Tax on FD interest at slab rate
+  let taxOnFdInterest: number
+  if (salaryDataForCalc?.usingSalaryRate && fdInterest > 0) {
+    const fdTaxResult = calculateSplitBracketTax({
+      additionalIncome: fdInterest,
+      currentTaxableIncome: salaryDataForCalc.taxableIncome + totalInterest, // FD interest comes after bond interest
+      regime: salaryDataForCalc.regime,
+    })
+    taxOnFdInterest = fdTaxResult.tax
+  } else {
+    taxOnFdInterest = Math.round(fdInterest * userTaxSlab * 1.04)
+  }
+  const netFdMaturityValue = fdMaturityValue - taxOnFdInterest
+
+  // Total net cash-in-hand = Bond maturity (after tax) + FD maturity (after tax)
+  const totalNetCashInHand = netMaturityValue + netFdMaturityValue
+
+  // Build notes array
+  const bondNotes = [
+    'Invest within 6 months of sale date',
+    'Maximum investment: ₹50 lakhs per financial year',
+    'Lock-in period: 5 years',
+    `Bond interest taxed at ${projectionState.taxSlab}% (your slab rate)`,
+    'Bonds: NHAI, REC, PFC, IRFC',
+  ]
+  if (remainingGain > 0) {
+    bondNotes.push(`Remaining ₹${formatIndianNumber(remainingGain)} capital gain taxed at ${result.taxRate}%`)
+    bondNotes.push(`Surplus ₹${formatIndianNumber(remainingCash)} assumed in FD @${fdRate}% for 5 years`)
+  }
 
   strategies.push({
     section: '54EC',
@@ -561,19 +614,22 @@ function calculateExemptions(
     deadline: bondDeadline,
     lockInYears: bondLockInYears,
     isEligible: true,
-    notes: [
-      'Invest within 6 months of sale date',
-      'Maximum investment: ₹50 lakhs per financial year',
-      'Lock-in period: 5 years',
-      `Interest taxed at ${projectionState.taxSlab}% (your slab rate)`,
-      'Bonds: NHAI, REC, PFC, IRFC',
-    ],
+    notes: bondNotes,
     bondDetails: {
       interestRate: bondInterestRate,
       totalInterest,
       maturityValue,
       taxOnInterest,
       netMaturityValue,
+      remainingGain,
+      taxOnRemainingGain,
+      remainingCash,
+      fdRate,
+      fdInterest,
+      fdMaturityValue,
+      taxOnFdInterest,
+      netFdMaturityValue,
+      totalNetCashInHand,
     },
   })
 
@@ -2302,28 +2358,42 @@ const RealEstateCalculator = forwardRef<RealEstateCalculatorRef>(function RealEs
                     netCashInHand = strategy.propertyProjection.netCashInHand
                     cagr = `${strategy.propertyProjection.annualizedReturn.toFixed(1)}%`
                   } else if (strategy.bondDetails) {
-                    netCashInHand = strategy.bondDetails.netMaturityValue
-                    // Calculate bond CAGR
-                    const bondCagr = calculateCAGR(strategy.investmentRequired, strategy.bondDetails.netMaturityValue, strategy.lockInYears)
+                    // Use total net cash-in-hand (bonds + FD for remaining amount)
+                    netCashInHand = strategy.bondDetails.totalNetCashInHand
+                    // Calculate CAGR based on total investment (bonds + remaining cash in FD)
+                    const totalInvestment = strategy.investmentRequired + strategy.bondDetails.remainingCash
+                    const bondCagr = totalInvestment > 0
+                      ? calculateCAGR(totalInvestment, strategy.bondDetails.totalNetCashInHand, strategy.lockInYears)
+                      : 0
                     cagr = `${bondCagr.toFixed(1)}%`
                   }
 
                   return (
-                    <tr key={strategy.section} className="hover:bg-slate-50">
-                      <td className="px-3 py-3">
-                        <span className="font-medium text-slate-700">Sec {strategy.section}</span>
-                        <span className="text-slate-400 ml-1 hidden sm:inline">- {strategy.name}</span>
-                      </td>
-                      <td className="px-3 py-3 text-right font-mono">₹{formatCompact(strategy.investmentRequired)}</td>
-                      <td className="px-3 py-3 text-right font-mono font-semibold text-green-600">
-                        +₹{formatCompact(strategy.taxSaved)}
-                      </td>
-                      <td className="px-3 py-3 text-right font-mono font-semibold text-emerald-600">
-                        ₹{formatCompact(netCashInHand)}
-                      </td>
-                      <td className="px-3 py-3 text-center font-mono text-purple-600 font-medium">{cagr}</td>
-                      <td className="px-3 py-3 text-center">{strategy.lockInYears}y</td>
-                    </tr>
+                    <React.Fragment key={strategy.section}>
+                      <tr className="hover:bg-slate-50">
+                        <td className="px-3 py-3">
+                          <span className="font-medium text-slate-700">Sec {strategy.section}</span>
+                          <span className="text-slate-400 ml-1 hidden sm:inline">- {strategy.name}</span>
+                        </td>
+                        <td className="px-3 py-3 text-right font-mono">₹{formatCompact(strategy.investmentRequired)}</td>
+                        <td className="px-3 py-3 text-right font-mono font-semibold text-green-600">
+                          +₹{formatCompact(strategy.taxSaved)}
+                        </td>
+                        <td className="px-3 py-3 text-right font-mono font-semibold text-emerald-600">
+                          ₹{formatCompact(netCashInHand)}
+                        </td>
+                        <td className="px-3 py-3 text-center font-mono text-purple-600 font-medium">{cagr}</td>
+                        <td className="px-3 py-3 text-center">{strategy.lockInYears}y</td>
+                      </tr>
+                      {/* Note row for 54EC explaining FD calculation */}
+                      {strategy.section === '54EC' && strategy.bondDetails && strategy.bondDetails.remainingCash > 0 && (
+                        <tr className="bg-blue-50/50">
+                          <td colSpan={6} className="px-3 py-2 text-[10px] text-blue-600">
+                            <span className="font-medium">Note:</span> Includes ₹{formatCompact(strategy.bondDetails.remainingCash)} surplus invested in FD @{strategy.bondDetails.fdRate}% for 5y → ₹{formatCompact(strategy.bondDetails.netFdMaturityValue)} (after tax)
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   )
                 })}
               </tbody>
@@ -2356,7 +2426,7 @@ const RealEstateCalculator = forwardRef<RealEstateCalculatorRef>(function RealEs
                   noActionAmount,
                   ...exemptions.map(s =>
                     s.propertyProjection?.netCashInHand ||
-                    s.bondDetails?.netMaturityValue ||
+                    s.bondDetails?.totalNetCashInHand ||
                     0
                   )
                 ]
@@ -2384,7 +2454,7 @@ const RealEstateCalculator = forwardRef<RealEstateCalculatorRef>(function RealEs
                     {/* Strategy Bars */}
                     {exemptions.map((strategy) => {
                       const amount = strategy.propertyProjection?.netCashInHand ||
-                                     strategy.bondDetails?.netMaturityValue ||
+                                     strategy.bondDetails?.totalNetCashInHand ||
                                      0
                       const isBest = amount === maxAmount
 
