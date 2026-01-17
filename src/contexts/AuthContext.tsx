@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react'
 import { User, Session } from '@supabase/supabase-js'
-import { createClient } from '@/lib/supabase/client'
+import { createClient, isSupabaseConfigured } from '@/lib/supabase/client'
 import { syncOnLogin } from '@/lib/supabase/sync'
 
 interface AuthContextType {
@@ -10,6 +10,7 @@ interface AuthContextType {
   session: Session | null
   isLoading: boolean
   isSyncing: boolean
+  isAuthEnabled: boolean
   signInWithGoogle: () => Promise<void>
   signOut: () => Promise<void>
 }
@@ -21,10 +22,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSyncing, setIsSyncing] = useState(false)
+  const [isAuthEnabled, setIsAuthEnabled] = useState(false)
   const hasSyncedRef = useRef<string | null>(null)
 
   useEffect(() => {
+    // Check if Supabase is configured
+    if (!isSupabaseConfigured()) {
+      console.log('Supabase not configured - auth disabled')
+      setIsLoading(false)
+      setIsAuthEnabled(false)
+      return
+    }
+
+    setIsAuthEnabled(true)
     const supabase = createClient()
+
+    // If client creation failed, disable auth
+    if (!supabase) {
+      console.log('Supabase client creation failed - auth disabled')
+      setIsLoading(false)
+      setIsAuthEnabled(false)
+      return
+    }
 
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -75,6 +94,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     const supabase = createClient()
+    if (!supabase) {
+      console.error('Supabase not configured - cannot sign in')
+      return
+    }
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -88,6 +111,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     const supabase = createClient()
+    if (!supabase) {
+      console.error('Supabase not configured - cannot sign out')
+      return
+    }
     const { error } = await supabase.auth.signOut()
     if (error) {
       console.error('Error signing out:', error.message)
@@ -95,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, isSyncing, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ user, session, isLoading, isSyncing, isAuthEnabled, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   )

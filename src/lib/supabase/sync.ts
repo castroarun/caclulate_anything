@@ -41,6 +41,12 @@ export async function pushToCloud(userId: string): Promise<SyncResult> {
   }
 
   const supabase = createClient()
+
+  // Check if Supabase is configured
+  if (!supabase) {
+    return { success: false, error: 'Supabase not configured' }
+  }
+
   let syncedCount = 0
 
   try {
@@ -106,6 +112,12 @@ export async function pullFromCloud(userId: string): Promise<SyncResult> {
   }
 
   const supabase = createClient()
+
+  // Check if Supabase is configured
+  if (!supabase) {
+    return { success: false, error: 'Supabase not configured' }
+  }
+
   let syncedCount = 0
 
   try {
@@ -206,6 +218,11 @@ export async function saveCalculatorToCloud(
 ): Promise<boolean> {
   const supabase = createClient()
 
+  // Check if Supabase is configured
+  if (!supabase) {
+    return false
+  }
+
   try {
     const { error } = await supabase
       .from('user_calculator_data')
@@ -238,6 +255,11 @@ export async function savePreferencesToCloud(
   preferences: { numberFormat?: string; favorites?: string[] }
 ): Promise<boolean> {
   const supabase = createClient()
+
+  // Check if Supabase is configured
+  if (!supabase) {
+    return false
+  }
 
   try {
     const updateData: Record<string, unknown> = {
