@@ -869,11 +869,11 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
       {/* Main Calculator Card */}
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
         {/* Mode Toggle */}
-        <div className="p-3 border-b border-slate-100 bg-slate-50">
+        <div className="p-2 sm:p-3 border-b border-slate-100 bg-slate-50">
           <div className="flex rounded-lg bg-slate-200 p-0.5">
             <button
               onClick={() => setMode('calculate')}
-              className={`flex-1 px-4 py-2 text-xs font-medium rounded-md transition-all ${
+              className={`flex-1 px-2 sm:px-4 py-2 text-[10px] sm:text-xs font-medium rounded-md transition-all ${
                 mode === 'calculate'
                   ? 'bg-white text-blue-600 shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
@@ -883,7 +883,7 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
             </button>
             <button
               onClick={() => setMode('affordability')}
-              className={`flex-1 px-4 py-2 text-xs font-medium rounded-md transition-all ${
+              className={`flex-1 px-2 sm:px-4 py-2 text-[10px] sm:text-xs font-medium rounded-md transition-all ${
                 mode === 'affordability'
                   ? 'bg-white text-blue-600 shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
@@ -901,15 +901,24 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
 
         <div className="grid md:grid-cols-2">
           {/* Inputs */}
-          <div className="p-5 space-y-5 border-r border-slate-100">
+          <div className="p-4 sm:p-5 space-y-5 md:border-r border-slate-100">
             {mode === 'calculate' ? (
               /* Loan Amount - Calculate mode */
               <div>
-                <div className="flex justify-between items-baseline mb-2">
-                  <label className="text-sm font-medium text-slate-600">Loan Amount</label>
-                  <span className="font-mono text-base font-semibold text-slate-900">
-                    ₹{formatIndianNumber(principal)}
-                  </span>
+                <label className="block text-sm font-medium text-slate-600 mb-2">Loan Amount</label>
+                <div className="relative mb-2">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">₹</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={formatIndianNumber(principal)}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/,/g, '').replace(/[^\d]/g, '')
+                      const num = parseInt(val) || 100000
+                      setPrincipal(Math.min(Math.max(num, 100000), 50000000))
+                    }}
+                    className="w-full pl-7 pr-3 py-2 text-base font-mono font-semibold text-slate-900 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
                 </div>
                 <input
                   type="range"
@@ -928,11 +937,20 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
             ) : (
               /* EMI Budget - Affordability mode */
               <div>
-                <div className="flex justify-between items-baseline mb-2">
-                  <label className="text-sm font-medium text-slate-600">Monthly EMI Budget</label>
-                  <span className="font-mono text-base font-semibold text-blue-600">
-                    ₹{formatIndianNumber(emiBudget)}
-                  </span>
+                <label className="block text-sm font-medium text-slate-600 mb-2">Monthly EMI Budget</label>
+                <div className="relative mb-2">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">₹</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={formatIndianNumber(emiBudget)}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/,/g, '').replace(/[^\d]/g, '')
+                      const num = parseInt(val) || 5000
+                      setEmiBudget(Math.min(Math.max(num, 5000), 500000))
+                    }}
+                    className="w-full pl-7 pr-3 py-2 text-base font-mono font-semibold text-blue-600 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
                 </div>
                 <input
                   type="range"
@@ -968,11 +986,20 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
 
             {/* Interest Rate */}
             <div>
-              <div className="flex justify-between items-baseline mb-2">
-                <label className="text-sm font-medium text-slate-600">Interest Rate</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  {rate}% p.a.
-                </span>
+              <label className="block text-sm font-medium text-slate-600 mb-2">Interest Rate</label>
+              <div className="relative mb-2">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={rate}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^\d.]/g, '')
+                    const num = parseFloat(val) || 5
+                    setRate(Math.min(Math.max(num, 5), 18))
+                  }}
+                  className="w-full pl-3 pr-12 py-2 text-base font-mono font-semibold text-slate-900 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">% p.a.</span>
               </div>
               <input
                 type="range"
@@ -1028,11 +1055,20 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
 
             {/* Loan Tenure */}
             <div>
-              <div className="flex justify-between items-baseline mb-2">
-                <label className="text-sm font-medium text-slate-600">Loan Tenure</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  {tenure} years
-                </span>
+              <label className="block text-sm font-medium text-slate-600 mb-2">Loan Tenure</label>
+              <div className="relative mb-2">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={tenure}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^\d]/g, '')
+                    const num = parseInt(val) || 1
+                    setTenure(Math.min(Math.max(num, 1), 30))
+                  }}
+                  className="w-full pl-3 pr-14 py-2 text-base font-mono font-semibold text-slate-900 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">years</span>
               </div>
               <input
                 type="range"
@@ -1051,7 +1087,7 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
           </div>
 
           {/* Results */}
-          <div className="p-5 bg-slate-50">
+          <div className="p-4 sm:p-5 bg-slate-50">
             {/* Primary Result - Mode dependent */}
             {mode === 'calculate' ? (
               <div className="bg-green-50 rounded-lg p-4 text-center mb-4">
@@ -1077,28 +1113,28 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
             )}
 
             {/* Secondary Results */}
-            <div className="grid grid-cols-3 gap-2 mb-4">
-              <div className="bg-white rounded-lg p-3 text-center">
-                <div className="text-[9px] uppercase tracking-wide text-slate-400 mb-0.5">
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mb-4">
+              <div className="bg-white rounded-lg p-2 sm:p-3 text-center">
+                <div className="text-[8px] sm:text-[9px] uppercase tracking-wide text-slate-400 mb-0.5">
                   {mode === 'calculate' ? 'Principal' : 'EMI Budget'}
                 </div>
-                <div className="font-mono text-sm font-semibold text-slate-900">
+                <div className="font-mono text-xs sm:text-sm font-semibold text-slate-900">
                   {mode === 'calculate' ? formatCurrencyCompact(principal) : formatCurrencyCompact(emiBudget)}
                 </div>
               </div>
-              <div className="bg-white rounded-lg p-3 text-center">
-                <div className="text-[9px] uppercase tracking-wide text-slate-400 mb-0.5">
+              <div className="bg-white rounded-lg p-2 sm:p-3 text-center">
+                <div className="text-[8px] sm:text-[9px] uppercase tracking-wide text-slate-400 mb-0.5">
                   Interest
                 </div>
-                <div className="font-mono text-sm font-semibold text-slate-900">
+                <div className="font-mono text-xs sm:text-sm font-semibold text-slate-900">
                   {formatCurrencyCompact(result.totalInterest)}
                 </div>
               </div>
-              <div className="bg-white rounded-lg p-3 text-center">
-                <div className="text-[9px] uppercase tracking-wide text-slate-400 mb-0.5">
+              <div className="bg-white rounded-lg p-2 sm:p-3 text-center">
+                <div className="text-[8px] sm:text-[9px] uppercase tracking-wide text-slate-400 mb-0.5">
                   Total
                 </div>
-                <div className="font-mono text-sm font-semibold text-slate-900">
+                <div className="font-mono text-xs sm:text-sm font-semibold text-slate-900">
                   {formatCurrencyCompact(result.totalPayment)}
                 </div>
               </div>

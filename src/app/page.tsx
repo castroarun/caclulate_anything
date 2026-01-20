@@ -29,19 +29,19 @@ export default function LandingPage() {
             <div className="flex items-center gap-1">
               <Link
                 href="#features"
-                className="px-3 py-2 text-sm text-slate-600 hover:text-slate-900 rounded-md hover:bg-slate-50 transition-colors"
+                className="hidden sm:block px-3 py-2 text-sm text-slate-600 hover:text-slate-900 rounded-md hover:bg-slate-50 transition-colors"
               >
                 Features
               </Link>
               <Link
                 href="#about"
-                className="px-3 py-2 text-sm text-slate-600 hover:text-slate-900 rounded-md hover:bg-slate-50 transition-colors"
+                className="hidden sm:block px-3 py-2 text-sm text-slate-600 hover:text-slate-900 rounded-md hover:bg-slate-50 transition-colors"
               >
                 About
               </Link>
               <Link
                 href="/workspace"
-                className="ml-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+                className="ml-1 sm:ml-2 px-3 sm:px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
               >
                 Get Started
               </Link>
