@@ -254,6 +254,12 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
   const [showNotes, setShowNotes] = useState(false)
   const calculatorRef = useRef<HTMLDivElement>(null)
 
+  // Local input states for editable fields (to prevent re-render loops)
+  const [principalInput, setPrincipalInput] = useState(formatIndianNumber(5000000))
+  const [emiBudgetInput, setEmiBudgetInput] = useState(formatIndianNumber(50000))
+  const [rateInput, setRateInput] = useState('8.5')
+  const [tenureInput, setTenureInput] = useState('20')
+
   // Prepayment helpers
   const addPrepayment = () => {
     const usedYears = new Set(prepayments.map((p) => p.year))
@@ -286,9 +292,20 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
       setRate(data.rate || 8.5)
       setTenure(data.tenure || 20)
       setNotes(data.notes || '')
+      // Also update local input states
+      setPrincipalInput(formatIndianNumber(data.principal || 5000000))
+      setEmiBudgetInput(formatIndianNumber(data.emiBudget || 50000))
+      setRateInput(String(data.rate || 8.5))
+      setTenureInput(String(data.tenure || 20))
     }
     setIsLoaded(true)
   }, [])
+
+  // Sync local input states when values change from sliders/presets
+  useEffect(() => { setPrincipalInput(formatIndianNumber(principal)) }, [principal])
+  useEffect(() => { setEmiBudgetInput(formatIndianNumber(emiBudget)) }, [emiBudget])
+  useEffect(() => { setRateInput(String(rate)) }, [rate])
+  useEffect(() => { setTenureInput(String(tenure)) }, [tenure])
 
   // Auto-save to localStorage + cloud (only after initial load)
   useEffect(() => {
@@ -331,6 +348,8 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
     setMode('calculate')
     setPrincipal(5000000)
     setEmiBudget(50000)
+    setPrincipalInput(formatIndianNumber(5000000))
+    setEmiBudgetInput(formatIndianNumber(50000))
     setRate(8.5)
     setTenure(20)
     setNotes('')
@@ -911,11 +930,14 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
                   <input
                     type="text"
                     inputMode="numeric"
-                    value={formatIndianNumber(principal)}
-                    onChange={(e) => {
+                    value={principalInput}
+                    onChange={(e) => setPrincipalInput(e.target.value)}
+                    onBlur={(e) => {
                       const val = e.target.value.replace(/,/g, '').replace(/[^\d]/g, '')
                       const num = parseInt(val) || 100000
-                      setPrincipal(Math.min(Math.max(num, 100000), 50000000))
+                      const clamped = Math.min(Math.max(num, 100000), 50000000)
+                      setPrincipal(clamped)
+                      setPrincipalInput(formatIndianNumber(clamped))
                     }}
                     className="w-full pl-7 pr-3 py-2 text-base font-mono font-semibold text-slate-900 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
@@ -943,11 +965,14 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
                   <input
                     type="text"
                     inputMode="numeric"
-                    value={formatIndianNumber(emiBudget)}
-                    onChange={(e) => {
+                    value={emiBudgetInput}
+                    onChange={(e) => setEmiBudgetInput(e.target.value)}
+                    onBlur={(e) => {
                       const val = e.target.value.replace(/,/g, '').replace(/[^\d]/g, '')
                       const num = parseInt(val) || 5000
-                      setEmiBudget(Math.min(Math.max(num, 5000), 500000))
+                      const clamped = Math.min(Math.max(num, 5000), 500000)
+                      setEmiBudget(clamped)
+                      setEmiBudgetInput(formatIndianNumber(clamped))
                     }}
                     className="w-full pl-7 pr-3 py-2 text-base font-mono font-semibold text-blue-600 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
@@ -991,11 +1016,14 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
                 <input
                   type="text"
                   inputMode="decimal"
-                  value={rate}
-                  onChange={(e) => {
+                  value={rateInput}
+                  onChange={(e) => setRateInput(e.target.value)}
+                  onBlur={(e) => {
                     const val = e.target.value.replace(/[^\d.]/g, '')
                     const num = parseFloat(val) || 5
-                    setRate(Math.min(Math.max(num, 5), 18))
+                    const clamped = Math.min(Math.max(num, 5), 18)
+                    setRate(clamped)
+                    setRateInput(String(clamped))
                   }}
                   className="w-full pl-3 pr-12 py-2 text-base font-mono font-semibold text-slate-900 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
@@ -1060,11 +1088,14 @@ const EMICalculator = forwardRef<EMICalculatorRef>(function EMICalculator(props,
                 <input
                   type="text"
                   inputMode="numeric"
-                  value={tenure}
-                  onChange={(e) => {
+                  value={tenureInput}
+                  onChange={(e) => setTenureInput(e.target.value)}
+                  onBlur={(e) => {
                     const val = e.target.value.replace(/[^\d]/g, '')
                     const num = parseInt(val) || 1
-                    setTenure(Math.min(Math.max(num, 1), 30))
+                    const clamped = Math.min(Math.max(num, 1), 30)
+                    setTenure(clamped)
+                    setTenureInput(String(clamped))
                   }}
                   className="w-full pl-3 pr-14 py-2 text-base font-mono font-semibold text-slate-900 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
