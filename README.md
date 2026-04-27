@@ -55,6 +55,28 @@
 
 ## Quick Start
 
+<details>
+<summary>📚 Table of Contents</summary>
+
+- [Features](#features)
+- [Quick Start](#quick-start)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Roadmap](#roadmap)
+- [License](#license)
+
+</details>
+
+## Features
+
+- 19 interlinked calculators — EMI, tip splits, compound interest, currency conversion
+- Plan mode chains calculations together for "what-if" analysis
+- Workspace mode opens multiple calculators side-by-side
+- 100% local processing — calculations never touch a server
+- Interactive Recharts visualizations
+
+## Quick Start
+
 <p align="center">
   <a href="https://anycalc.in"><img src="https://img.shields.io/badge/🚀_Live_Demo-anycalc.in-2563EB?style=for-the-badge" alt="Live Demo" /></a>
 </p>
@@ -271,6 +293,34 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 <p align="center">
   <sub>Built with care by <a href="https://github.com/castroarun">Castro</a></sub>
 </p>
+
+## Tech Stack
+
+| Component | Tech |
+|---|---|
+| Next.js | — |
+| TypeScript | — |
+| Supabase | — |
+| Zustand | — |
+
+## Roadmap
+
+- [x] Investment + Loan + Tax + Health calculators
+- [x] Plan mode (chained calculations)
+- [ ] Multi-language support
+- [ ] Calculator marketplace
+
+## License
+
+Private — part of the Castronix portfolio.
+
+<div align="center">
+
+---
+
+<sub>Part of the <a href="https://castronix.dev">Castronix</a> portfolio · crafted with care · © 2026 Arun Castromin</sub>
+
+</div>
 
 ## Tech Stack
 
