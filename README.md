@@ -1,3 +1,60 @@
+<div align="center">
+
+# AnyCalc
+
+**Calculate anything, anywhere — 19 interlinked financial calculators in one app**
+
+![Next.js](https://img.shields.io/badge/Next.js-14-000000?logo=nextdotjs&logoColor=white) ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white) ![Supabase](https://img.shields.io/badge/Supabase-cloud-3ECF8E?logo=supabase&logoColor=white) ![Zustand](https://img.shields.io/badge/Zustand-state-764ABC) ![Status](https://img.shields.io/badge/Status-Live-22c55e)
+
+[**Live demo →**](https://anycalc.in)
+
+</div>
+
+<!-- LAUNCHPAD:START -->
+```json
+{
+  "stage": "live",
+  "progress": 50,
+  "complexity": "F",
+  "lastUpdated": "2026-04-27",
+  "targetDate": null,
+  "nextAction": "Multi-language support",
+  "blocker": null,
+  "demoUrl": "https://anycalc.in",
+  "techStack": [
+    "Next.js",
+    "TypeScript",
+    "Supabase",
+    "Zustand"
+  ],
+  "shipped": true,
+  "linkedinPosted": false
+}
+```
+<!-- LAUNCHPAD:END -->
+
+<details>
+<summary>📚 Table of Contents</summary>
+
+- [Features](#features)
+- [Quick Start](#quick-start)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Roadmap](#roadmap)
+- [License](#license)
+
+</details>
+
+## Features
+
+- 19 interlinked calculators — EMI, tip splits, compound interest, currency conversion
+- Plan mode chains calculations together for "what-if" analysis
+- Workspace mode opens multiple calculators side-by-side
+- 100% local processing — calculations never touch a server
+- Interactive Recharts visualizations
+
+## Quick Start
+
 <p align="center">
   <a href="https://anycalc.in"><img src="https://img.shields.io/badge/🚀_Live_Demo-anycalc.in-2563EB?style=for-the-badge" alt="Live Demo" /></a>
 </p>
@@ -32,23 +89,7 @@
   <a href="#-contributing">Contributing</a>
 </p>
 
-<!-- LAUNCHPAD:START -->
-```json
-{
-  "stage": "live",
-  "progress": 100,
-  "complexity": "F",
-  "lastUpdated": "2026-01-17",
-  "targetDate": null,
-  "nextAction": "Add more calculators based on feedback",
-  "blocker": null,
-  "demoUrl": "https://anycalc.in",
-  "techStack": ["Next.js", "TypeScript", "Tailwind CSS"],
-  "shipped": true,
-  "linkedinPosted": false
-}
-```
-<!-- LAUNCHPAD:END -->
+
 
 ---
 
@@ -230,3 +271,31 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 <p align="center">
   <sub>Built with care by <a href="https://github.com/castroarun">Castro</a></sub>
 </p>
+
+## Tech Stack
+
+| Component | Tech |
+|---|---|
+| Next.js | — |
+| TypeScript | — |
+| Supabase | — |
+| Zustand | — |
+
+## Roadmap
+
+- [x] Investment + Loan + Tax + Health calculators
+- [x] Plan mode (chained calculations)
+- [ ] Multi-language support
+- [ ] Calculator marketplace
+
+## License
+
+Private — part of the Castronix portfolio.
+
+<div align="center">
+
+---
+
+<sub>Part of the <a href="https://castronix.dev">Castronix</a> portfolio · crafted with care · © 2026 Arun Castromin</sub>
+
+</div>
