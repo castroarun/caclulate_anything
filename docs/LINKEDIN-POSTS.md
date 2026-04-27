@@ -23,11 +23,12 @@ Just shipped and now live at anycalc.in
 
 **Shareable Calculations** — For the first time, your calculations are shareable. Send a link, not a screenshot.
 
-**Realistic Defaults** — Opens with sensible Indian market values. No more entering 5% returns in a 12% inflation economy.
+**No Arbitrary Limits** — No "max ₹1,00,000" caps that leave you doing mental math. Real ranges for real goals.
 
+Built with Next.js, TypeScript, and Tailwind CSS.
 **Fast. Mobile compatible.** No ads. No signup walls.
 
-19 calculators. One clean interface.
+**19 calculators. One clean interface.**
 
 Try it: https://anycalc.in
 
