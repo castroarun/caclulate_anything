@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI in Action — Opening · Arun Castro</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=JetBrains+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      background: #0a0a0b;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      color: #f5f5f7;
+      position: relative;
+      cursor: default;
+    }
+
+    body:fullscreen,
+    body:-webkit-full-screen {
+      cursor: none;
+    }
+
+    /* Soft ambient glows */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 85% 15%, rgba(99, 102, 241, 0.10), transparent 70%),
+        radial-gradient(ellipse 50% 40% at 10% 90%, rgba(245, 158, 11, 0.08), transparent 70%),
+        radial-gradient(ellipse 80% 60% at 50% 50%, rgba(255, 255, 255, 0.015), transparent 80%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Subtle grain texture */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+      opacity: 0.035;
+      pointer-events: none;
+      mix-blend-mode: overlay;
+      z-index: 0;
+    }
+
+    .slide {
+      position: relative;
+      z-index: 1;
+      height: 100vh;
+      width: 100vw;
+      padding: 5vh 6vw;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 4vh;
+    }
+
+    /* ── HEADER ─────────────────────────────────────── */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #8a8a90;
+      font-weight: 500;
+      opacity: 0;
+      animation: fadeIn 0.6s 0.1s forwards;
+    }
+
+    .badge {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .badge-dot {
+      width: 7px;
+      height: 7px;
+      background: #f59e0b;
+      border-radius: 50%;
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.7);
+      animation: pulse 2.4s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .header .right {
+      display: flex;
+      align-items: center;
+      gap: 1.2rem;
+    }
+
+    .header .sep {
+      width: 1px;
+      height: 12px;
+      background: #2a2a2e;
+    }
+
+    /* ── CENTER STAGE ───────────────────────────────── */
+    .stage {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      max-width: 1180px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .pretitle {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      letter-spacing: 0.12em;
+      color: #f59e0b;
+      margin-bottom: 2.5rem;
+      opacity: 0;
+      animation: fadeUp 0.8s 0.3s forwards;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .pretitle .slash {
+      color: #444;
+    }
+
+    .quote-mark {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: clamp(5rem, 9vw, 9rem);
+      line-height: 0.6;
+      color: rgba(245, 158, 11, 0.55);
+      display: block;
+      margin-bottom: -1rem;
+      margin-left: -0.05em;
+      opacity: 0;
+      animation: fadeUp 0.8s 0.4s forwards;
+    }
+
+    .quote {
+      font-size: clamp(2.6rem, 5.6vw, 5.2rem);
+      font-weight: 200;
+      line-height: 1.12;
+      letter-spacing: -0.025em;
+      color: #fafafa;
+      opacity: 0;
+      animation: fadeUp 1s 0.55s forwards;
+    }
+
+    .quote .highlight {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-style: italic;
+      font-weight: 400;
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 60%, #ea7c0a 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 0;
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 4px;
+      height: 0.85em;
+      background: #f59e0b;
+      margin-left: 8px;
+      vertical-align: -0.05em;
+      animation: blink 1.05s step-end infinite;
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.6);
+    }
+
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      50.01%, 100% { opacity: 0; }
+    }
+
+    .attribution {
+      margin-top: 3.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      opacity: 0;
+      animation: fadeUp 0.8s 1s forwards;
+    }
+
+    .attribution .line {
+      width: 50px;
+      height: 1px;
+      background: linear-gradient(90deg, #f59e0b, transparent);
+    }
+
+    .attribution .who .name {
+      font-size: 1.25rem;
+      font-weight: 500;
+      color: #fafafa;
+      letter-spacing: -0.01em;
+    }
+
+    .attribution .who .role {
+      font-size: 0.9rem;
+      color: #8a8a90;
+      margin-top: 0.3rem;
+      font-weight: 300;
+      letter-spacing: 0.02em;
+    }
+
+    /* ── FOOTER ─────────────────────────────────────── */
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 2rem;
+      opacity: 0;
+      animation: fadeUp 0.8s 1.4s forwards;
+    }
+
+    .speaker {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .avatar-mini {
+      width: 60px; height: 60px;
+      border-radius: 50%;
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: radial-gradient(circle at 30% 30%, #2a1f10, #0e0a06);
+      border: 1.5px solid rgba(245, 158, 11, 0.4);
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.18);
+    }
+    .avatar-mini::before {
+      content: attr(data-initials);
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-style: italic;
+      font-size: 1.3rem;
+      color: #fbbf24;
+      z-index: 0;
+    }
+    .avatar-mini img {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      z-index: 1;
+    }
+
+    .speaker-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .speaker-info .label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #555;
+    }
+
+    .speaker-info .name {
+      color: #fafafa;
+      font-weight: 500;
+      font-size: 1.1rem;
+      letter-spacing: -0.01em;
+    }
+
+    .speaker-info .title-line {
+      color: #d4d4d8;
+      font-size: 0.88rem;
+      font-weight: 400;
+    }
+
+    .speaker-info .title-line .accent {
+      color: #fbbf24;
+      font-weight: 500;
+    }
+
+    .speaker-info .meta {
+      color: #8a8a90;
+      font-size: 0.8rem;
+      font-weight: 300;
+    }
+
+    .clock {
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.1em;
+    }
+
+    .urls {
+      text-align: right;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      line-height: 1.9;
+      color: #aaa;
+    }
+
+    .urls .row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.6rem;
+    }
+
+    .urls .arrow {
+      color: #f59e0b;
+      font-weight: 500;
+    }
+
+    .urls .label {
+      color: #555;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-right: 0.6rem;
+    }
+
+    /* ── ANIMATIONS ─────────────────────────────────── */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── AVATAR ──────────────────────────────────────── */
+    .avatar {
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: radial-gradient(circle at 30% 30%, #2a1f10, #0e0a06);
+      border: 1.5px solid rgba(245, 158, 11, 0.45);
+      box-shadow:
+        0 0 0 4px rgba(10, 10, 11, 1),
+        0 0 0 5px rgba(245, 158, 11, 0.18),
+        0 0 24px rgba(245, 158, 11, 0.25);
+    }
+
+    .avatar::before {
+      content: attr(data-initials);
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-style: italic;
+      font-size: 1.7rem;
+      color: #fbbf24;
+      letter-spacing: 0.02em;
+      z-index: 0;
+    }
+
+    .avatar img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: grayscale(0.15) contrast(1.05) brightness(0.95);
+      z-index: 1;
+    }
+
+    /* Hint badge for first-time viewers */
+    .hint {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #444;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 0.5rem 1rem;
+      border-radius: 999px;
+      z-index: 10;
+      opacity: 0;
+      animation: fadeIn 0.5s 2s forwards;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+    }
+
+    .hint:hover {
+      color: #f59e0b;
+      border-color: rgba(245, 158, 11, 0.3);
+    }
+
+    body:fullscreen .hint,
+    body:-webkit-full-screen .hint {
+      display: none;
+    }
+
+    /* Smaller screens fallback */
+    @media (max-width: 768px) {
+      .slide {
+        padding: 4vh 5vw;
+      }
+      .footer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1.5rem;
+      }
+      .urls {
+        text-align: left;
+      }
+      .urls .row {
+        justify-content: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="slide">
+    <!-- Top meta bar -->
+    <header class="header">
+      <div class="badge">
+        <span class="badge-dot"></span>
+        <span>AI in Action · Rotaract Club, MNM Jain</span>
+      </div>
+      <div class="right">
+        <span>27 Apr 2026</span>
+        <span class="sep"></span>
+        <span class="clock" id="clock">--:--:-- IST</span>
+        <span class="sep"></span>
+        <span>G-Meet</span>
+      </div>
+    </header>
+
+    <!-- Center quote -->
+    <main class="stage">
+      <div class="pretitle">
+        <span class="slash">//</span>
+        <span>opening note</span>
+      </div>
+
+      <span class="quote-mark">&ldquo;</span>
+
+      <h1 class="quote">
+        The hottest new <span class="highlight">programming language</span> is English<span class="cursor"></span>
+      </h1>
+
+      <div class="attribution">
+        <div class="avatar" data-initials="AK">
+          <img src="assets/karpathy.jpg" alt="Andrej Karpathy" onerror="this.style.display='none'" />
+        </div>
+        <div class="line"></div>
+        <div class="who">
+          <div class="name">Andrej Karpathy</div>
+          <div class="role">Co-founder, OpenAI · Former Director of AI, Tesla</div>
+        </div>
+      </div>
+    </main>
+
+  </div>
+
+  <button class="hint" onclick="document.documentElement.requestFullscreen()">Press for Fullscreen</button>
+
+  <script>
+    function updateClock() {
+      const d = new Date();
+      const opts = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' };
+      const time = d.toLocaleTimeString('en-IN', opts).replace(/\s/g, ' ');
+      const el = document.getElementById('clock');
+      if (el) el.textContent = time + ' IST';
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'f' || e.key === 'F' || e.key === 'Enter') {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen();
+        }
+      }
+      if (e.key === 'Escape' && document.fullscreenElement) {
+        document.exitFullscreen();
+      }
+    });
+  </script>
+
+  <script>
+    // Forward nav keys to parent deck.html if running in iframe
+    if (window.parent !== window) {
+      window.addEventListener('keydown', (e) => {
+        const navKeys = ['ArrowRight','ArrowLeft',' ','PageDown','PageUp','Home','End','1','2','3','4','5','6','7','f','F','h','H','?','Escape'];
+        if (navKeys.includes(e.key)) {
+          window.parent.postMessage({ type: 'deckKey', key: e.key, shiftKey: e.shiftKey }, '*');
+          e.stopImmediatePropagation();
+          e.preventDefault();
+        }
+      }, true);
+    }
+  </script>
+</body>
+</html>

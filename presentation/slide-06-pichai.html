@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI in Action — Closing 1 · Pichai</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=JetBrains+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      height: 100%; width: 100%;
+      overflow: hidden;
+      background: #0a0a0b;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      color: #f5f5f7;
+      position: relative;
+      cursor: default;
+    }
+
+    body:fullscreen, body:-webkit-full-screen { cursor: none; }
+
+    /* Fire/electricity ambient — warm orange-red glow */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 80% 20%, rgba(239, 68, 68, 0.10), transparent 70%),
+        radial-gradient(ellipse 55% 45% at 15% 85%, rgba(245, 158, 11, 0.10), transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+      opacity: 0.035;
+      pointer-events: none;
+      mix-blend-mode: overlay;
+      z-index: 0;
+    }
+
+    .slide {
+      position: relative;
+      z-index: 1;
+      height: 100vh;
+      width: 100vw;
+      padding: 5vh 6vw;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 4vh;
+    }
+
+    /* HEADER */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #8a8a90;
+      font-weight: 500;
+      opacity: 0;
+      animation: fadeIn 0.6s 0.1s forwards;
+    }
+
+    .badge { display: flex; align-items: center; gap: 0.6rem; }
+    .badge-dot {
+      width: 7px; height: 7px;
+      background: #ef4444;
+      border-radius: 50%;
+      box-shadow: 0 0 14px rgba(239, 68, 68, 0.7);
+      animation: pulse 2.4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+    .header .right { display: flex; gap: 1.2rem; align-items: center; }
+    .header .sep { width: 1px; height: 12px; background: #2a2a2e; }
+
+    /* CENTER */
+    .stage {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      max-width: 1180px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .pretitle {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      letter-spacing: 0.12em;
+      color: #ef4444;
+      margin-bottom: 2.5rem;
+      opacity: 0;
+      animation: fadeUp 0.8s 0.3s forwards;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .pretitle .slash { color: #444; }
+
+    .quote-mark {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: clamp(5rem, 9vw, 9rem);
+      line-height: 0.6;
+      color: rgba(239, 68, 68, 0.55);
+      display: block;
+      margin-bottom: -1rem;
+      margin-left: -0.05em;
+      opacity: 0;
+      animation: fadeUp 0.8s 0.4s forwards;
+    }
+
+    .quote {
+      font-size: clamp(2rem, 4.4vw, 4.2rem);
+      font-weight: 200;
+      line-height: 1.18;
+      letter-spacing: -0.025em;
+      color: #fafafa;
+      opacity: 0;
+      animation: fadeUp 1s 0.55s forwards;
+    }
+
+    .quote .em-fire {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-style: italic;
+      font-weight: 400;
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 40%, #ef4444 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .attribution {
+      margin-top: 3.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      opacity: 0;
+      animation: fadeUp 0.8s 1s forwards;
+    }
+
+    .attribution .line {
+      width: 50px;
+      height: 1px;
+      background: linear-gradient(90deg, #ef4444, transparent);
+    }
+
+    .attribution .who .name {
+      font-size: 1.25rem;
+      font-weight: 500;
+      color: #fafafa;
+      letter-spacing: -0.01em;
+    }
+
+    .attribution .who .role {
+      font-size: 0.9rem;
+      color: #8a8a90;
+      margin-top: 0.3rem;
+      font-weight: 300;
+      letter-spacing: 0.02em;
+    }
+
+    /* AVATAR */
+    .avatar {
+      width: 76px; height: 76px;
+      border-radius: 50%;
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: radial-gradient(circle at 30% 30%, #2a1010, #0a0606);
+      border: 1.5px solid rgba(239, 68, 68, 0.45);
+      box-shadow:
+        0 0 0 4px rgba(10, 10, 11, 1),
+        0 0 0 5px rgba(239, 68, 68, 0.18),
+        0 0 24px rgba(239, 68, 68, 0.25);
+    }
+    .avatar::before {
+      content: attr(data-initials);
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-style: italic;
+      font-size: 1.7rem;
+      color: #fbbf24;
+      z-index: 0;
+    }
+    .avatar img {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      filter: grayscale(0.15) contrast(1.05) brightness(0.95);
+      z-index: 1;
+    }
+
+    /* FOOTER */
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 2rem;
+      opacity: 0;
+      animation: fadeUp 0.8s 1.4s forwards;
+    }
+
+    .speaker {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .avatar-mini {
+      width: 60px; height: 60px;
+      border-radius: 50%;
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: radial-gradient(circle at 30% 30%, #2a1f10, #0e0a06);
+      border: 1.5px solid rgba(245, 158, 11, 0.4);
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.18);
+    }
+    .avatar-mini::before {
+      content: attr(data-initials);
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-style: italic;
+      font-size: 1.3rem;
+      color: #fbbf24;
+      z-index: 0;
+    }
+    .avatar-mini img {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      z-index: 1;
+    }
+
+    .speaker-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .speaker-info .label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #555;
+    }
+
+    .speaker-info .name {
+      color: #fafafa;
+      font-weight: 500;
+      font-size: 1.1rem;
+      letter-spacing: -0.01em;
+    }
+
+    .speaker-info .title-line {
+      color: #d4d4d8;
+      font-size: 0.88rem;
+      font-weight: 400;
+    }
+
+    .speaker-info .title-line .accent {
+      color: #fbbf24;
+      font-weight: 500;
+    }
+
+    .speaker-info .meta {
+      color: #8a8a90;
+      font-size: 0.8rem;
+      font-weight: 300;
+    }
+
+    .clock {
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.1em;
+    }
+
+    .urls {
+      text-align: right;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      line-height: 1.9;
+      color: #aaa;
+    }
+
+    .urls .row { display: flex; align-items: center; justify-content: flex-end; gap: 0.6rem; }
+    .urls .arrow { color: #ef4444; }
+    .urls .label {
+      color: #555;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-right: 0.6rem;
+    }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hint {
+      position: fixed; bottom: 1.5rem; right: 1.5rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #444;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 0.5rem 1rem;
+      border-radius: 999px;
+      z-index: 10;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+    }
+    .hint:hover { color: #ef4444; border-color: rgba(239, 68, 68, 0.3); }
+    body:fullscreen .hint, body:-webkit-full-screen .hint { display: none; }
+  </style>
+</head>
+<body>
+  <div class="slide">
+    <header class="header">
+      <div class="badge">
+        <span class="badge-dot"></span>
+        <span>AI in Action · Closing Note</span>
+      </div>
+      <div class="right">
+        <span>27 Apr 2026</span>
+        <span class="sep"></span>
+        <span class="clock" id="clock">--:--:-- IST</span>
+        <span class="sep"></span>
+        <span>The Civilizational Lens</span>
+      </div>
+    </header>
+
+    <main class="stage">
+      <div class="pretitle">
+        <span class="slash">//</span>
+        <span>and finally — the bigger picture</span>
+      </div>
+
+      <span class="quote-mark">&ldquo;</span>
+
+      <h1 class="quote">
+        AI is one of the most important things humanity is working on.
+        It is more profound than <span class="em-fire">electricity</span> or <span class="em-fire">fire</span>.
+      </h1>
+
+      <div class="attribution">
+        <div class="avatar" data-initials="SP">
+          <img src="assets/sundarpichai.jpg" alt="Sundar Pichai" onerror="this.style.display='none'" />
+        </div>
+        <div class="line"></div>
+        <div class="who">
+          <div class="name">Sundar Pichai</div>
+          <div class="role">CEO, Alphabet &amp; Google</div>
+        </div>
+      </div>
+    </main>
+
+  </div>
+
+  <button class="hint" onclick="document.documentElement.requestFullscreen()">Press for Fullscreen</button>
+
+  <script>
+    function updateClock() {
+      const d = new Date();
+      const opts = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' };
+      const time = d.toLocaleTimeString('en-IN', opts).replace(/\s/g, ' ');
+      const el = document.getElementById('clock');
+      if (el) el.textContent = time + ' IST';
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'f' || e.key === 'F' || e.key === 'Enter') {
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      }
+      if (e.key === 'Escape' && document.fullscreenElement) document.exitFullscreen();
+    });
+  </script>
+
+  <script>
+    if (window.parent !== window) {
+      window.addEventListener('keydown', (e) => {
+        const navKeys = ['ArrowRight','ArrowLeft',' ','PageDown','PageUp','Home','End','1','2','3','4','5','6','7','f','F','h','H','?','Escape'];
+        if (navKeys.includes(e.key)) {
+          window.parent.postMessage({ type: 'deckKey', key: e.key, shiftKey: e.shiftKey }, '*');
+          e.stopImmediatePropagation();
+          e.preventDefault();
+        }
+      }, true);
+    }
+  </script>
+</body>
+</html>

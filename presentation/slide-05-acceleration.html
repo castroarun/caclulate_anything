@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Acceleration · AI in Action</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      height: 100%; width: 100%;
+      overflow: hidden;
+      background: #0a0a0b;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      color: #f5f5f7;
+      position: relative;
+      cursor: default;
+    }
+
+    body:fullscreen, body:-webkit-full-screen { cursor: none; }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 50% 40% at 25% 50%, rgba(99, 102, 241, 0.10), transparent 70%),
+        radial-gradient(ellipse 50% 40% at 75% 50%, rgba(245, 158, 11, 0.10), transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+      opacity: 0.035;
+      pointer-events: none;
+      mix-blend-mode: overlay;
+      z-index: 0;
+    }
+
+    .slide {
+      position: relative; z-index: 1;
+      height: 100vh; width: 100vw;
+      padding: 4vh 4vw;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 2vh;
+    }
+
+    /* HEADER */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #8a8a90;
+      font-weight: 500;
+    }
+
+    .badge { display: flex; align-items: center; gap: 0.6rem; }
+    .badge-dot {
+      width: 7px; height: 7px;
+      background: #f59e0b;
+      border-radius: 50%;
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.7);
+      animation: pulse 2.4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+    .header .right { display: flex; gap: 1.2rem; align-items: center; }
+    .header .sep { width: 1px; height: 12px; background: #2a2a2e; }
+
+    .clock {
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.1em;
+    }
+
+    /* TITLE */
+    .title-block { text-align: center; padding-top: 0.5vh; }
+
+    .pretitle {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      letter-spacing: 0.18em;
+      color: #f59e0b;
+      margin-bottom: 0.8rem;
+      text-transform: uppercase;
+    }
+    .pretitle .slash { color: #444; margin-right: 0.5rem; }
+
+    h1.title {
+      font-size: clamp(1.8rem, 3.4vw, 3.2rem);
+      font-weight: 200;
+      line-height: 1.05;
+      letter-spacing: -0.025em;
+      color: #fafafa;
+    }
+
+    h1.title .em {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-style: italic;
+      font-weight: 400;
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    h1.title .em-blue {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-style: italic;
+      font-weight: 400;
+      color: #818cf8;
+    }
+
+    h1.title .bang { color: #fbbf24; font-weight: 300; margin-left: 0.05em; }
+
+    /* CHART ROW — two panels side by side */
+    .chart-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2vw;
+      align-items: stretch;
+    }
+
+    .chart-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+      padding: 1.2rem 1rem 0.8rem;
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0));
+      border: 1px solid rgba(255,255,255,0.06);
+      position: relative;
+      overflow: visible;
+    }
+
+    .chart-panel.left { border-color: rgba(99, 102, 241, 0.18); }
+    .chart-panel.right { border-color: rgba(245, 158, 11, 0.22); }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 0 0.5rem;
+    }
+
+    .panel-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #888;
+    }
+
+    .panel-title {
+      font-size: 1.3rem;
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      margin-top: 0.2rem;
+    }
+
+    .chart-panel.left .panel-title { color: #c7d2fe; }
+    .chart-panel.right .panel-title { color: #fde68a; }
+
+    .panel-meta {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: #aaa;
+      font-weight: 500;
+    }
+
+    .panel-meta .num {
+      font-size: 1.3rem;
+      font-weight: 600;
+    }
+
+    .chart-panel.left .panel-meta .num { color: #818cf8; }
+    .chart-panel.right .panel-meta .num { color: #fbbf24; }
+
+    /* SVG */
+    svg.chart {
+      width: 100%;
+      height: auto;
+      max-height: 50vh;
+      display: block;
+    }
+
+    .axis-line { stroke: #2a2a2e; stroke-width: 1; }
+    .grid-line { stroke: #1c1c20; stroke-width: 1; stroke-dasharray: 2 4; }
+
+    .year-label {
+      fill: #777;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.05em;
+    }
+
+    .year-label.highlight-gold {
+      fill: #fbbf24;
+      font-weight: 600;
+    }
+
+    .y-axis-label {
+      fill: #555;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .x-axis-sub {
+      fill: #555;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .curve {
+      fill: none;
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .curve.blue {
+      stroke: #818cf8;
+      filter: drop-shadow(0 0 6px rgba(99, 102, 241, 0.7));
+    }
+
+    .curve.gold-solid {
+      stroke: #fbbf24;
+      filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.8));
+    }
+
+    .curve.gold-dotted {
+      stroke: #fbbf24;
+      stroke-width: 2.5;
+      stroke-dasharray: 6 6;
+      opacity: 0.45;
+    }
+
+    .curve-fill { stroke: none; opacity: 0.18; }
+    .curve-fill.blue { fill: url(#gradBlue); }
+    .curve-fill.gold-solid { fill: url(#gradGoldSolid); }
+    .curve-fill.gold-dotted { fill: url(#gradGoldDotted); opacity: 0.06; }
+
+    .milestone-dot {
+      fill: #0a0a0b;
+      stroke-width: 2;
+    }
+    .milestone-dot.blue { stroke: #818cf8; }
+    .milestone-dot.gold { stroke: #fbbf24; }
+
+    .milestone-dot.glow.blue { filter: drop-shadow(0 0 8px #6366f1); }
+    .milestone-dot.glow.gold { filter: drop-shadow(0 0 10px #f59e0b); }
+
+    .era-marker {
+      stroke: #f59e0b;
+      stroke-width: 1.2;
+      stroke-dasharray: 3 4;
+      opacity: 0.55;
+    }
+
+    .era-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 500;
+      fill: #fbbf24;
+    }
+
+    .we-are-here {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-style: italic;
+      font-size: 17px;
+      fill: #fbbf24;
+      filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.6));
+    }
+
+    .ahead-label {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-style: italic;
+      font-size: 16px;
+      fill: #fde68a;
+      opacity: 0.55;
+    }
+
+    /* Animations */
+    .curve-animated {
+      stroke-dasharray: 2000;
+      stroke-dashoffset: 2000;
+      animation: drawCurve 2.4s 0.4s ease-out forwards;
+    }
+
+    .curve-animated.delay-1 {
+      animation: drawCurve 0.9s 1.6s ease-out forwards;
+    }
+
+    /* The dotted curve uses dasharray for the dots, so we animate via opacity instead */
+    .dotted-fade {
+      opacity: 0;
+      animation: dottedFadeIn 1s 2.7s forwards;
+    }
+
+    @keyframes drawCurve { to { stroke-dashoffset: 0; } }
+    @keyframes dottedFadeIn { to { opacity: 0.45; } }
+
+    .fade-in {
+      opacity: 0;
+      animation: fadeIn 0.6s forwards;
+    }
+
+    @keyframes fadeIn { to { opacity: 1; } }
+
+    /* INSIGHT */
+    .insight {
+      text-align: center;
+      padding: 0.5vh 0;
+    }
+
+    .insight-line {
+      font-size: clamp(1.05rem, 1.5vw, 1.4rem);
+      font-weight: 300;
+      color: #d4d4d8;
+      letter-spacing: -0.01em;
+      line-height: 1.4;
+    }
+
+    .insight-line .num {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-style: italic;
+      font-weight: 400;
+      font-size: 1.2em;
+      color: #fbbf24;
+    }
+
+    .insight-line .strong {
+      color: #fafafa;
+      font-weight: 500;
+    }
+
+    .insight-line .divider {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background: #f59e0b;
+      border-radius: 50%;
+      margin: 0 1rem;
+      vertical-align: middle;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+    }
+
+    .hint {
+      position: fixed; bottom: 1rem; right: 1.5rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #444;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 0.4rem 0.9rem;
+      border-radius: 999px;
+      z-index: 10;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+    }
+    .hint:hover { color: #f59e0b; border-color: rgba(245, 158, 11, 0.3); }
+    body:fullscreen .hint, body:-webkit-full-screen .hint { display: none; }
+  </style>
+</head>
+<body>
+  <div class="slide">
+    <!-- Header -->
+    <header class="header fade-in" style="animation-delay: 0.1s;">
+      <div class="badge">
+        <span class="badge-dot"></span>
+        <span>AI in Action · Rotaract Club, MNM Jain</span>
+      </div>
+      <div class="right">
+        <span>27 Apr 2026</span>
+        <span class="sep"></span>
+        <span class="clock" id="clock">--:--:-- IST</span>
+        <span class="sep"></span>
+        <span>The Acceleration</span>
+      </div>
+    </header>
+
+    <!-- Title -->
+    <div class="title-block fade-in" style="animation-delay: 0.3s;">
+      <div class="pretitle"><span class="slash">//</span>where are we in the curve?</div>
+      <h1 class="title">
+        What microprocessors did in <span class="em-blue">54 years</span>,
+        AI is just <span class="em">9</span><span class="bang">!!</span>
+      </h1>
+    </div>
+
+    <!-- Charts side by side -->
+    <div class="chart-row fade-in" style="animation-delay: 0.5s;">
+
+      <!-- LEFT: Microprocessor (full S-curve, 54 years) -->
+      <div class="chart-panel left">
+        <div class="panel-header">
+          <div>
+            <div class="panel-label">The Microprocessor</div>
+            <div class="panel-title">A complete journey</div>
+          </div>
+          <div class="panel-meta"><span class="num">54</span> yrs</div>
+        </div>
+
+        <svg class="chart" viewBox="0 0 720 500" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <linearGradient id="gradBlue" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#818cf8" stop-opacity="0.5"/>
+              <stop offset="100%" stop-color="#818cf8" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+
+          <!-- Grid -->
+          <line class="grid-line" x1="60" y1="155" x2="660" y2="155"/>
+          <line class="grid-line" x1="60" y1="250" x2="660" y2="250"/>
+          <line class="grid-line" x1="60" y1="345" x2="660" y2="345"/>
+
+          <!-- Axis -->
+          <line class="axis-line" x1="60" y1="440" x2="660" y2="440"/>
+
+          <!-- Y-axis label -->
+          <text class="y-axis-label" x="40" y="80" text-anchor="end" transform="rotate(-90 40 80)">capability →</text>
+
+          <!-- Year ticks (years since launch) -->
+          <text class="year-label" x="60" y="465" text-anchor="middle">0</text>
+          <text class="year-label" x="160" y="465" text-anchor="middle">9</text>
+          <text class="year-label" x="260" y="465" text-anchor="middle">18</text>
+          <text class="year-label" x="360" y="465" text-anchor="middle">27</text>
+          <text class="year-label" x="460" y="465" text-anchor="middle">36</text>
+          <text class="year-label" x="560" y="465" text-anchor="middle">45</text>
+          <text class="year-label" x="660" y="465" text-anchor="middle">54</text>
+          <text class="x-axis-sub" x="360" y="488" text-anchor="middle">years since launch</text>
+
+          <!-- Filled curve (under the line) -->
+          <path class="curve-fill blue"
+            d="M 60 421 C 110 421 140 410 160 389 C 200 360 240 340 260 320 C 290 290 320 270 340 240 C 380 200 420 165 460 140 C 500 115 540 95 580 85 C 620 78 650 76 660 75 L 660 440 L 60 440 Z"/>
+
+          <!-- Solid blue curve (full 54 years) -->
+          <path class="curve blue curve-animated"
+            d="M 60 421 C 110 421 140 410 160 389 C 200 360 240 340 260 320 C 290 290 320 270 340 240 C 380 200 420 165 460 140 C 500 115 540 95 580 85 C 620 78 650 76 660 75"/>
+
+          <!-- Milestone dots -->
+          <g class="fade-in" style="animation-delay: 2.6s;">
+            <circle class="milestone-dot glow blue" cx="60" cy="421" r="5"/>
+            <circle class="milestone-dot blue" cx="260" cy="320" r="4"/>
+            <circle class="milestone-dot blue" cx="460" cy="140" r="4"/>
+            <circle class="milestone-dot glow blue" cx="660" cy="75" r="6"/>
+          </g>
+        </svg>
+      </div>
+
+      <!-- RIGHT: AI on the same scale (solid 0-9, dotted 9-54) -->
+      <div class="chart-panel right">
+        <div class="panel-header">
+          <div>
+            <div class="panel-label">Artificial Intelligence</div>
+            <div class="panel-title">Year 9 of 54 &mdash; mostly ahead</div>
+          </div>
+          <div class="panel-meta"><span class="num">9</span> + 45 yrs</div>
+        </div>
+
+        <svg class="chart" viewBox="0 0 720 500" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <linearGradient id="gradGoldSolid" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.55"/>
+              <stop offset="100%" stop-color="#fbbf24" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="gradGoldDotted" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.25"/>
+              <stop offset="100%" stop-color="#fbbf24" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+
+          <!-- Grid -->
+          <line class="grid-line" x1="60" y1="155" x2="660" y2="155"/>
+          <line class="grid-line" x1="60" y1="250" x2="660" y2="250"/>
+          <line class="grid-line" x1="60" y1="345" x2="660" y2="345"/>
+
+          <!-- Axis -->
+          <line class="axis-line" x1="60" y1="440" x2="660" y2="440"/>
+
+          <!-- Y-axis label -->
+          <text class="y-axis-label" x="40" y="80" text-anchor="end" transform="rotate(-90 40 80)">capability →</text>
+
+          <!-- Year ticks (years since launch) — same scale as left -->
+          <text class="year-label" x="60" y="465" text-anchor="middle">0</text>
+          <text class="year-label highlight-gold" x="160" y="465" text-anchor="middle">9</text>
+          <text class="year-label" x="260" y="465" text-anchor="middle">18</text>
+          <text class="year-label" x="360" y="465" text-anchor="middle">27</text>
+          <text class="year-label" x="460" y="465" text-anchor="middle">36</text>
+          <text class="year-label" x="560" y="465" text-anchor="middle">45</text>
+          <text class="year-label" x="660" y="465" text-anchor="middle">54</text>
+          <text class="x-axis-sub" x="360" y="488" text-anchor="middle">years since launch</text>
+
+          <!-- Vertical "year 9" marker -->
+          <line class="era-marker fade-in" style="animation-delay: 1.2s;" x1="160" y1="60" x2="160" y2="440"/>
+          <text class="era-label fade-in" style="animation-delay: 1.2s;" x="160" y="48" text-anchor="middle">↓ Today</text>
+
+          <!-- Filled area under the SOLID part (year 0-9) -->
+          <path class="curve-fill gold-solid"
+            d="M 60 421 C 110 421 140 410 160 389 L 160 440 L 60 440 Z"/>
+
+          <!-- Filled area under the DOTTED part (year 9-54) — very faint -->
+          <path class="curve-fill gold-dotted"
+            d="M 160 389 C 200 360 240 340 260 320 C 290 290 320 270 340 240 C 380 200 420 165 460 140 C 500 115 540 95 580 85 C 620 78 650 76 660 75 L 660 440 L 160 440 Z"/>
+
+          <!-- DOTTED curve (year 9-54) — same shape as microprocessor -->
+          <path class="curve gold-dotted dotted-fade"
+            d="M 160 389 C 200 360 240 340 260 320 C 290 290 320 270 340 240 C 380 200 420 165 460 140 C 500 115 540 95 580 85 C 620 78 650 76 660 75"/>
+
+          <!-- SOLID curve (year 0-9) — bright -->
+          <path class="curve gold-solid curve-animated"
+            d="M 60 421 C 110 421 140 410 160 389"/>
+
+          <!-- Milestone dots — only on solid portion -->
+          <g class="fade-in" style="animation-delay: 1.9s;">
+            <circle class="milestone-dot glow gold" cx="60" cy="421" r="5"/>
+            <circle class="milestone-dot glow gold" cx="160" cy="389" r="6"/>
+          </g>
+
+          <!-- "we are here" annotation -->
+          <text class="we-are-here fade-in" style="animation-delay: 2.1s;" x="160" y="380" text-anchor="middle">we are here</text>
+
+          <!-- "45 years ahead" annotation in the dotted region -->
+          <text class="ahead-label dotted-fade" x="420" y="200" text-anchor="middle">— 45 years still ahead —</text>
+        </svg>
+      </div>
+
+    </div>
+
+    <!-- Insight -->
+    <div class="insight fade-in" style="animation-delay: 1.0s;">
+      <div class="insight-line">
+        <span class="num">9</span> done. <span class="strong">45 to go.</span>
+        <span class="divider"></span>
+        Everything you've seen from AI &mdash; that's only the <span class="num">first</span> chapter.
+      </div>
+    </div>
+  </div>
+
+  <button class="hint" onclick="document.documentElement.requestFullscreen()">F = Fullscreen</button>
+
+  <script>
+    function updateClock() {
+      const d = new Date();
+      const opts = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' };
+      const time = d.toLocaleTimeString('en-IN', opts).replace(/\s/g, ' ');
+      const el = document.getElementById('clock');
+      if (el) el.textContent = time + ' IST';
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'f' || e.key === 'F' || e.key === 'Enter') {
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      }
+      if (e.key === 'Escape' && document.fullscreenElement) document.exitFullscreen();
+    });
+  </script>
+
+  <script>
+    if (window.parent !== window) {
+      window.addEventListener('keydown', (e) => {
+        const navKeys = ['ArrowRight','ArrowLeft',' ','PageDown','PageUp','Home','End','1','2','3','4','5','6','7','f','F','h','H','?','Escape'];
+        if (navKeys.includes(e.key)) {
+          window.parent.postMessage({ type: 'deckKey', key: e.key, shiftKey: e.shiftKey }, '*');
+          e.stopImmediatePropagation();
+          e.preventDefault();
+        }
+      }, true);
+    }
+  </script>
+</body>
+</html>
