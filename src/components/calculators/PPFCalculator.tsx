@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
+import { EditableValue } from '@/components/calculator/EditableValue'
 
 interface PPFResult {
   yearlyDeposit: number
@@ -374,9 +375,7 @@ const PPFCalculator = forwardRef<PPFCalculatorRef>(function PPFCalculator(props,
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Yearly Deposit</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  ₹{formatIndianNumber(yearlyDeposit)}
-                </span>
+                <EditableValue value={yearlyDeposit} onChange={setYearlyDeposit} min={500} max={150000} prefix="₹" />
               </div>
               <input
                 type="range"
@@ -397,9 +396,7 @@ const PPFCalculator = forwardRef<PPFCalculatorRef>(function PPFCalculator(props,
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Interest Rate</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  {interestRate}% p.a.
-                </span>
+                <EditableValue value={interestRate} onChange={setInterestRate} min={6} max={9} suffix="% p.a." allowDecimal />
               </div>
               <input
                 type="range"
@@ -423,9 +420,7 @@ const PPFCalculator = forwardRef<PPFCalculatorRef>(function PPFCalculator(props,
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Tenure</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  {tenure} years
-                </span>
+                <EditableValue value={tenure} onChange={setTenure} min={15} max={50} suffix="years" />
               </div>
               <input
                 type="range"

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
+import { EditableValue } from '@/components/calculator/EditableValue'
 
 interface GSTResult {
   originalAmount: number
@@ -300,9 +301,7 @@ const GSTCalculator = forwardRef<GSTCalculatorRef>(function GSTCalculator(props,
                 <label className="text-sm font-medium text-slate-600">
                   {isInclusive ? 'Total Amount (with GST)' : 'Base Amount (without GST)'}
                 </label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  ₹{formatIndianNumber(amount)}
-                </span>
+                <EditableValue value={amount} onChange={setAmount} min={100} max={10000000} prefix="₹" />
               </div>
               <input
                 type="range"

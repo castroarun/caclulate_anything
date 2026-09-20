@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
+import { EditableValue } from '@/components/calculator/EditableValue'
 
 interface GratuityResult {
   basicSalary: number
@@ -290,9 +291,7 @@ const GratuityCalculator = forwardRef<GratuityCalculatorRef>(function GratuityCa
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Basic Salary (Monthly)</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  ₹{formatIndianNumber(basicSalary)}
-                </span>
+                <EditableValue value={basicSalary} onChange={setBasicSalary} min={10000} max={500000} prefix="₹" />
               </div>
               <input
                 type="range"
@@ -313,9 +312,7 @@ const GratuityCalculator = forwardRef<GratuityCalculatorRef>(function GratuityCa
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Dearness Allowance (DA)</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  ₹{formatIndianNumber(da)}
-                </span>
+                <EditableValue value={da} onChange={setDa} min={0} max={200000} prefix="₹" />
               </div>
               <input
                 type="range"
@@ -336,9 +333,7 @@ const GratuityCalculator = forwardRef<GratuityCalculatorRef>(function GratuityCa
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Years of Service</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  {yearsOfService} years {monthsOfService > 0 ? `${monthsOfService} months` : ''}
-                </span>
+                <EditableValue value={yearsOfService} onChange={setYearsOfService} min={5} max={40} suffix={`years${monthsOfService > 0 ? ` ${monthsOfService} months` : ''}`} />
               </div>
               <input
                 type="range"
@@ -359,9 +354,7 @@ const GratuityCalculator = forwardRef<GratuityCalculatorRef>(function GratuityCa
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Additional Months</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  {monthsOfService} months
-                </span>
+                <EditableValue value={monthsOfService} onChange={setMonthsOfService} min={0} max={11} suffix="months" />
               </div>
               <input
                 type="range"

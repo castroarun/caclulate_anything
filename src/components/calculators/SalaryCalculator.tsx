@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
+import { EditableValue } from '@/components/calculator/EditableValue'
 
 interface TaxSlabBreakdown {
   slab: string
@@ -541,9 +542,7 @@ const SalaryCalculator = forwardRef<SalaryCalculatorRef>(function SalaryCalculat
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Basic Salary %</label>
-                <span className="font-mono text-sm font-semibold text-slate-900">
-                  {basicPercent}%
-                </span>
+                <EditableValue value={basicPercent} onChange={setBasicPercent} min={30} max={60} suffix="%" allowDecimal className="text-sm" />
               </div>
               <input
                 type="range"
@@ -564,9 +563,7 @@ const SalaryCalculator = forwardRef<SalaryCalculatorRef>(function SalaryCalculat
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">HRA % of Basic</label>
-                <span className="font-mono text-sm font-semibold text-slate-900">
-                  {hraPercent}%
-                </span>
+                <EditableValue value={hraPercent} onChange={setHraPercent} min={30} max={100} suffix="%" allowDecimal className="text-sm" />
               </div>
               <input
                 type="range"
@@ -587,9 +584,7 @@ const SalaryCalculator = forwardRef<SalaryCalculatorRef>(function SalaryCalculat
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">PF % of Basic</label>
-                <span className="font-mono text-sm font-semibold text-slate-900">
-                  {pfPercent}%
-                </span>
+                <EditableValue value={pfPercent} onChange={setPfPercent} min={0} max={12} suffix="%" allowDecimal className="text-sm" />
               </div>
               <input
                 type="range"

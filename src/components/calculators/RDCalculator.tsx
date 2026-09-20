@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
+import { EditableValue } from '@/components/calculator/EditableValue'
 
 interface RDResult {
   monthlyDeposit: number
@@ -372,9 +373,7 @@ const RDCalculator = forwardRef<RDCalculatorRef>(function RDCalculator(props, re
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Monthly Deposit</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  ₹{formatIndianNumber(monthlyDeposit)}
-                </span>
+                <EditableValue value={monthlyDeposit} onChange={setMonthlyDeposit} min={500} max={500000} prefix="₹" />
               </div>
               <input
                 type="range"
@@ -395,9 +394,7 @@ const RDCalculator = forwardRef<RDCalculatorRef>(function RDCalculator(props, re
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Interest Rate</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  {interestRate}% p.a.
-                </span>
+                <EditableValue value={interestRate} onChange={setInterestRate} min={4} max={9} suffix="% p.a." allowDecimal />
               </div>
               <input
                 type="range"
@@ -418,10 +415,7 @@ const RDCalculator = forwardRef<RDCalculatorRef>(function RDCalculator(props, re
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Tenure</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  {tenureYears > 0 ? `${tenureYears}y ` : ''}{tenureMonths > 0 ? `${tenureMonths}m` : ''}
-                  {tenureYears === 0 && tenureMonths === 0 ? `${tenure}m` : ''}
-                </span>
+                <EditableValue value={tenure} onChange={setTenure} min={6} max={120} suffix={`months${tenureYears > 0 ? ` (${tenureYears}y${tenureMonths > 0 ? ` ${tenureMonths}m` : ''})` : ''}`} />
               </div>
               <input
                 type="range"

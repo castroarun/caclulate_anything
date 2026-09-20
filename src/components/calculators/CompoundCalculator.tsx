@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
+import { EditableValue } from '@/components/calculator/EditableValue'
+import { AmountSlider, AMOUNT_RANGES_FROM_LAKH } from '@/components/calculator/AmountSlider'
 
 // Interfaces
 interface CompoundResult {
@@ -874,58 +876,24 @@ const CompoundCalculator = forwardRef<CompoundCalculatorRef>(function CompoundCa
 
             {/* Principal Amount or Target Amount based on mode */}
             {mode === 'calculate' ? (
-              <div>
-                <div className="flex justify-between items-baseline mb-2">
-                  <label className="text-sm font-medium text-slate-600">Principal Amount</label>
-                  <span className="font-mono text-base font-semibold text-slate-900">
-                    ₹{formatIndianNumber(principal)}
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min={1000}
-                  max={100000000}
-                  step={1000}
-                  value={principal}
-                  onChange={(e) => setPrincipal(Number(e.target.value))}
-                  className="w-full h-1 bg-slate-200 rounded-full appearance-none cursor-pointer accent-green-600"
-                />
-                <div className="flex justify-between mt-1 text-[10px] text-slate-400">
-                  <span>₹1K</span>
-                  <span>₹10Cr</span>
-                </div>
-              </div>
+              <AmountSlider label="Principal Amount" value={principal} onChange={setPrincipal} />
             ) : (
-              <div>
-                <div className="flex justify-between items-baseline mb-2">
-                  <label className="text-sm font-medium text-slate-600">Target Amount</label>
-                  <span className="font-mono text-base font-semibold text-blue-600">
-                    ₹{formatIndianNumber(targetAmount)}
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min={100000}
-                  max={100000000}
-                  step={100000}
-                  value={targetAmount}
-                  onChange={(e) => setTargetAmount(Number(e.target.value))}
-                  className="w-full h-1 bg-slate-200 rounded-full appearance-none cursor-pointer accent-blue-600"
-                />
-                <div className="flex justify-between mt-1 text-[10px] text-slate-400">
-                  <span>₹1L</span>
-                  <span>₹10Cr</span>
-                </div>
-              </div>
+              <AmountSlider
+                label="Target Amount"
+                value={targetAmount}
+                onChange={setTargetAmount}
+                ranges={AMOUNT_RANGES_FROM_LAKH}
+                accentClass="accent-blue-600"
+                activeChipClass="bg-blue-50 border-blue-300 text-blue-700"
+                valueClassName="text-blue-600"
+              />
             )}
 
             {/* Interest Rate */}
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Interest Rate</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  {rate}% p.a.
-                </span>
+                <EditableValue value={rate} onChange={setRate} min={1} max={30} suffix="% p.a." allowDecimal />
               </div>
               <input
                 type="range"
@@ -946,9 +914,7 @@ const CompoundCalculator = forwardRef<CompoundCalculatorRef>(function CompoundCa
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Time Period</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  {years} years
-                </span>
+                <EditableValue value={years} onChange={setYears} min={1} max={30} suffix="years" />
               </div>
               <input
                 type="range"
@@ -1012,9 +978,7 @@ const CompoundCalculator = forwardRef<CompoundCalculatorRef>(function CompoundCa
                 <div className="mt-3">
                   <div className="flex justify-between items-baseline mb-2">
                     <label className="text-sm font-medium text-slate-600">Monthly Contribution</label>
-                    <span className="font-mono text-base font-semibold text-slate-900">
-                      ₹{formatIndianNumber(monthlyContribution)}
-                    </span>
+                    <EditableValue value={monthlyContribution} onChange={setMonthlyContribution} min={0} max={100000} prefix="₹" />
                   </div>
                   <input
                     type="range"

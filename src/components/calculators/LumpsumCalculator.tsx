@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
+import { EditableValue } from '@/components/calculator/EditableValue'
 
 interface LumpsumResult {
   investedAmount: number
@@ -693,9 +694,7 @@ const LumpsumCalculator = forwardRef<LumpsumCalculatorRef>(function LumpsumCalcu
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Investment Amount</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  ₹{formatIndianNumber(investment)}
-                </span>
+                <EditableValue value={investment} onChange={setInvestment} min={10000} max={100000000} prefix="₹" />
               </div>
               <input
                 type="range"
@@ -716,9 +715,7 @@ const LumpsumCalculator = forwardRef<LumpsumCalculatorRef>(function LumpsumCalcu
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Expected Return Rate</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  {rate}% p.a.
-                </span>
+                <EditableValue value={rate} onChange={setRate} min={5} max={30} suffix="% p.a." allowDecimal />
               </div>
               <input
                 type="range"
@@ -739,9 +736,7 @@ const LumpsumCalculator = forwardRef<LumpsumCalculatorRef>(function LumpsumCalcu
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Investment Period</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  {years} years
-                </span>
+                <EditableValue value={years} onChange={setYears} min={1} max={30} suffix="years" />
               </div>
               <input
                 type="range"
@@ -884,7 +879,7 @@ const LumpsumCalculator = forwardRef<LumpsumCalculatorRef>(function LumpsumCalcu
         <div className="p-4">
           <div className="flex items-center gap-3 mb-2 text-[10px] font-medium text-slate-400 uppercase tracking-wide">
             <span className="w-8">Year</span>
-            <span className="flex-1">Growth Progression</span>
+            <span className="flex-1">Opening Balance + Returns</span>
             <span className="w-20 text-right">Value</span>
           </div>
           <div className="space-y-2">
@@ -893,36 +888,36 @@ const LumpsumCalculator = forwardRef<LumpsumCalculatorRef>(function LumpsumCalcu
               const barWidth = maxValue > 0 ? (year.closingBalance / maxValue) * 100 : 0
               const openingWidth = maxValue > 0 ? (year.openingBalance / maxValue) * 100 : 0
               const returnsWidth = barWidth - openingWidth
-              // Gradient from green to teal for growth visualization
-              const gradientHue = 120 + (index / yearlyBreakdown.length) * 30
+              // Every row shows the split; a label that doesn't fit its segment sits just outside the bar
+              const returnsInside = returnsWidth > 18
 
               return (
                 <div key={year.year} className="flex items-center gap-3">
                   <span className="text-xs w-8 font-mono text-slate-500">Y{year.year}</span>
-                  <div className="flex-1 h-7 bg-slate-100 rounded overflow-hidden relative flex">
+                  <div className="flex-1 min-w-0 h-7 bg-slate-100 rounded overflow-hidden relative flex">
                     <div
-                      className="h-full bg-green-500 flex items-center justify-end pr-1"
+                      className="h-full bg-green-500 flex items-center justify-end pr-1 overflow-hidden"
                       style={{ width: `${openingWidth}%` }}
                     >
-                      {openingWidth > 15 && (
-                        <span className="text-[9px] text-white font-medium">
-                          {formatCompact(year.openingBalance)}
-                        </span>
-                      )}
+                      <span className="text-[9px] text-white font-medium whitespace-nowrap">
+                        {formatCompact(year.openingBalance)}
+                      </span>
                     </div>
                     <div
-                      className="h-full flex items-center justify-start pl-1"
-                      style={{
-                        width: `${returnsWidth}%`,
-                        backgroundColor: `hsl(${gradientHue}, 70%, 45%)`,
-                      }}
+                      className="h-full bg-teal-600 flex items-center justify-start pl-1 overflow-hidden"
+                      style={{ width: `${returnsWidth}%` }}
                     >
-                      {returnsWidth > 15 && (
-                        <span className="text-[9px] text-white font-medium">
+                      {returnsInside && (
+                        <span className="text-[9px] text-white font-medium whitespace-nowrap">
                           +{formatCompact(year.returns)}
                         </span>
                       )}
                     </div>
+                    {!returnsInside && (
+                      <span className="self-center pl-1 text-[9px] text-teal-700 font-medium whitespace-nowrap">
+                        +{formatCompact(year.returns)}
+                      </span>
+                    )}
                   </div>
                   <span className="text-[10px] text-slate-600 w-20 text-right font-mono">
                     {formatCompact(year.closingBalance)}
@@ -991,8 +986,26 @@ const LumpsumCalculator = forwardRef<LumpsumCalculatorRef>(function LumpsumCalcu
                   step={10000}
                 />
               </div>
-              <div className="mt-1 text-[10px] text-slate-400">
-                Current projection: ₹{formatIndianNumber(result.totalValue)}
+              <div className="mt-1 flex flex-wrap justify-between gap-x-3 text-[10px] text-slate-400">
+                <span>
+                  Target: <span className="font-semibold text-slate-600">{formatCompact(targetAmount)}</span> (₹{formatIndianNumber(targetAmount)})
+                </span>
+                <span>Current projection: ₹{formatIndianNumber(result.totalValue)}</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {[1000000, 5000000, 10000000, 50000000, 100000000].map((amt) => (
+                  <button
+                    key={amt}
+                    onClick={() => setTargetAmount(amt)}
+                    className={`px-2 py-1 text-[10px] rounded-full border transition-colors ${
+                      targetAmount === amt
+                        ? 'bg-green-50 border-green-300 text-green-700'
+                        : 'border-slate-200 text-slate-500 hover:border-green-300'
+                    }`}
+                  >
+                    {formatCompact(amt).replace('.00', '')}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -1034,7 +1047,16 @@ const LumpsumCalculator = forwardRef<LumpsumCalculatorRef>(function LumpsumCalcu
             </div>
 
             {/* Result Display */}
-            {goalPlanResult && (
+            {goalPlanResult && targetAmount <= investment && (
+              <div className="bg-green-50 rounded-xl p-4 border border-green-200 text-center">
+                <div className="text-sm font-semibold text-green-700">Target already reached</div>
+                <div className="text-xs text-green-600 mt-1">
+                  Your investment of {formatCompact(investment)} is already more than the {formatCompact(targetAmount)} target.
+                  Did you mean a bigger target?
+                </div>
+              </div>
+            )}
+            {goalPlanResult && targetAmount > investment && (
               <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl p-4 border border-amber-200">
                 <div className="text-center">
                   <div className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 mb-1">
@@ -1059,7 +1081,7 @@ const LumpsumCalculator = forwardRef<LumpsumCalculatorRef>(function LumpsumCalcu
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     {goalMode !== 'investment' && (
                       <div className="bg-white/50 rounded-lg p-2">
-                        <div className="text-amber-600">If you invest more:</div>
+                        <div className="text-amber-600">Or invest today:</div>
                         <div className="font-mono font-medium text-amber-800">
                           ₹{formatIndianNumber(calculateRequiredInvestment(targetAmount, rate, years))}
                         </div>
@@ -1067,7 +1089,7 @@ const LumpsumCalculator = forwardRef<LumpsumCalculatorRef>(function LumpsumCalcu
                     )}
                     {goalMode !== 'time' && (
                       <div className="bg-white/50 rounded-lg p-2">
-                        <div className="text-amber-600">With more time:</div>
+                        <div className="text-amber-600">Or keep investment, wait:</div>
                         <div className="font-mono font-medium text-amber-800">
                           {(Math.round(calculateRequiredTime(investment, targetAmount, rate) * 10) / 10).toFixed(1)} years
                         </div>
@@ -1075,7 +1097,7 @@ const LumpsumCalculator = forwardRef<LumpsumCalculatorRef>(function LumpsumCalcu
                     )}
                     {goalMode !== 'rate' && (
                       <div className="bg-white/50 rounded-lg p-2">
-                        <div className="text-amber-600">At higher returns:</div>
+                        <div className="text-amber-600">Or keep investment, earn:</div>
                         <div className="font-mono font-medium text-amber-800">
                           {calculateRequiredRate(investment, targetAmount, years).toFixed(2)}% p.a.
                         </div>
@@ -1118,13 +1140,13 @@ const LumpsumCalculator = forwardRef<LumpsumCalculatorRef>(function LumpsumCalcu
               {yearlyBreakdown.map((row) => (
                 <tr key={row.year} className="hover:bg-slate-50">
                   <td className="px-3 py-2 font-mono text-slate-600">{row.year}</td>
-                  <td className="px-3 py-2 text-right text-slate-900 font-mono">
+                  <td className="px-3 py-2 whitespace-nowrap text-right text-slate-900 font-mono">
                     ₹{formatIndianNumber(row.openingBalance)}
                   </td>
-                  <td className="px-3 py-2 text-right text-green-600 font-mono">
+                  <td className="px-3 py-2 whitespace-nowrap text-right text-green-600 font-mono">
                     +₹{formatIndianNumber(row.returns)}
                   </td>
-                  <td className="px-3 py-2 text-right text-slate-900 font-mono font-semibold">
+                  <td className="px-3 py-2 whitespace-nowrap text-right text-slate-900 font-mono font-semibold">
                     ₹{formatIndianNumber(row.closingBalance)}
                   </td>
                 </tr>

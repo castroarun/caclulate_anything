@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect, forwardRef, useImperativeHandle } from 'react'
 import { useNumberFormat } from '@/contexts/NumberFormatContext'
+import { EditableValue } from '@/components/calculator/EditableValue'
 
 // Cost Inflation Index (CII) Data - Base Year 2001-02 = 100
 const CII_DATA: Record<string, number> = {
@@ -1570,9 +1571,7 @@ const RealEstateCalculator = forwardRef<RealEstateCalculatorRef>(function RealEs
                 <div>
                   <div className="flex justify-between items-baseline mb-1">
                     <label className="text-xs text-slate-500">Purchase Price</label>
-                    <span className="font-mono text-sm font-semibold text-purple-600">
-                      ₹{formatNumber(property.purchasePrice)}
-                    </span>
+                    <EditableValue value={property.purchasePrice} onChange={(v) => updateProperty('purchasePrice', v)} min={100000} max={property.propertyType === 'commercial' ? 100000000 : 40000000} prefix="₹" className="text-sm text-purple-600" />
                   </div>
                   <input
                     type="range"
@@ -1593,9 +1592,7 @@ const RealEstateCalculator = forwardRef<RealEstateCalculatorRef>(function RealEs
                 <div>
                   <div className="flex justify-between items-baseline mb-1">
                     <label className="text-xs text-slate-500">Stamp Duty & Registration</label>
-                    <span className="font-mono text-sm font-semibold text-slate-700">
-                      ₹{formatNumber(property.stampDuty)}
-                    </span>
+                    <EditableValue value={property.stampDuty} onChange={(v) => updateProperty('stampDuty', v)} min={0} max={property.propertyType === 'commercial' ? 10000000 : 4000000} prefix="₹" className="text-sm text-slate-700" />
                   </div>
                   <input
                     type="range"
@@ -1616,9 +1613,7 @@ const RealEstateCalculator = forwardRef<RealEstateCalculatorRef>(function RealEs
                 <div>
                   <div className="flex justify-between items-baseline mb-1">
                     <label className="text-xs text-slate-500">Improvement Cost</label>
-                    <span className="font-mono text-sm font-semibold text-slate-700">
-                      ₹{formatNumber(property.improvementCost)}
-                    </span>
+                    <EditableValue value={property.improvementCost} onChange={(v) => updateProperty('improvementCost', v)} min={0} max={50000000} prefix="₹" className="text-sm text-slate-700" />
                   </div>
                   <input
                     type="range"
@@ -1659,9 +1654,7 @@ const RealEstateCalculator = forwardRef<RealEstateCalculatorRef>(function RealEs
                 <div>
                   <div className="flex justify-between items-baseline mb-1">
                     <label className="text-xs text-slate-500">Sale Price</label>
-                    <span className="font-mono text-sm font-semibold text-green-600">
-                      ₹{formatNumber(property.salePrice)}
-                    </span>
+                    <EditableValue value={property.salePrice} onChange={(v) => updateProperty('salePrice', v)} min={100000} max={property.propertyType === 'commercial' ? 100000000 : 40000000} prefix="₹" className="text-sm text-green-600" />
                   </div>
                   <input
                     type="range"
@@ -1682,9 +1675,7 @@ const RealEstateCalculator = forwardRef<RealEstateCalculatorRef>(function RealEs
                 <div>
                   <div className="flex justify-between items-baseline mb-1">
                     <label className="text-xs text-slate-500">Brokerage (~1%)</label>
-                    <span className="font-mono text-sm font-semibold text-slate-700">
-                      ₹{formatNumber(property.brokerage)}
-                    </span>
+                    <EditableValue value={property.brokerage} onChange={(v) => updateProperty('brokerage', v)} min={0} max={10000000} prefix="₹" className="text-sm text-slate-700" />
                   </div>
                   <input
                     type="range"
@@ -1705,9 +1696,7 @@ const RealEstateCalculator = forwardRef<RealEstateCalculatorRef>(function RealEs
                 <div>
                   <div className="flex justify-between items-baseline mb-1">
                     <label className="text-xs text-slate-500">Legal Fees</label>
-                    <span className="font-mono text-sm font-semibold text-slate-700">
-                      ₹{formatNumber(property.legalFees)}
-                    </span>
+                    <EditableValue value={property.legalFees} onChange={(v) => updateProperty('legalFees', v)} min={0} max={5000000} prefix="₹" className="text-sm text-slate-700" />
                   </div>
                   <input
                     type="range"

@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 import { useNumberFormat } from '@/contexts/NumberFormatContext'
+import { EditableValue } from '@/components/calculator/EditableValue'
 
 // ============ Interfaces ============
 
@@ -878,9 +879,7 @@ const FDCalculator = forwardRef<FDCalculatorRef>(function FDCalculator(props, re
               <div>
                 <div className="flex justify-between items-baseline mb-2">
                   <label className="text-sm font-medium text-slate-600">Principal Amount</label>
-                  <span className="font-mono text-base font-semibold text-slate-900">
-                    ₹{formatIndianNumber(principal)}
-                  </span>
+                  <EditableValue value={principal} onChange={setPrincipal} min={10000} max={100000000} prefix="₹" />
                 </div>
                 <input
                   type="range"
@@ -901,9 +900,7 @@ const FDCalculator = forwardRef<FDCalculatorRef>(function FDCalculator(props, re
               <div>
                 <div className="flex justify-between items-baseline mb-2">
                   <label className="text-sm font-medium text-slate-600">Target Maturity</label>
-                  <span className="font-mono text-base font-semibold text-green-600">
-                    ₹{formatIndianNumber(targetMaturity)}
-                  </span>
+                  <EditableValue value={targetMaturity} onChange={setTargetMaturity} min={100000} max={100000000} prefix="₹" className="text-green-600" />
                 </div>
                 <input
                   type="range"
@@ -941,9 +938,7 @@ const FDCalculator = forwardRef<FDCalculatorRef>(function FDCalculator(props, re
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Interest Rate</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  {rate}% p.a.
-                </span>
+                <EditableValue value={rate} onChange={setRate} min={3} max={10} suffix="% p.a." allowDecimal />
               </div>
               <input
                 type="range"
@@ -964,9 +959,7 @@ const FDCalculator = forwardRef<FDCalculatorRef>(function FDCalculator(props, re
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Tenure</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  {tenureMonths} months ({(tenureMonths / 12).toFixed(1)} yrs)
-                </span>
+                <EditableValue value={tenureMonths} onChange={setTenureMonths} min={6} max={120} suffix={`months (${(tenureMonths / 12).toFixed(1)} yrs)`} />
               </div>
               <input
                 type="range"

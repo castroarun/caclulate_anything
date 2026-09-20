@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 import { useNumberFormat } from '@/contexts/NumberFormatContext'
+import { EditableValue } from '@/components/calculator/EditableValue'
 
 interface TaxResult {
   grossIncome: number
@@ -384,9 +385,7 @@ const TaxCalculator = forwardRef<TaxCalculatorRef>(function TaxCalculator(props,
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Gross Annual Income</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  ₹{formatIndianNumber(grossIncome)}
-                </span>
+                <EditableValue value={grossIncome} onChange={setGrossIncome} min={300000} max={50000000} prefix="₹" />
               </div>
               <input
                 type="range"
@@ -407,9 +406,7 @@ const TaxCalculator = forwardRef<TaxCalculatorRef>(function TaxCalculator(props,
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Section 80C (PF, PPF, ELSS)</label>
-                <span className="font-mono text-sm font-semibold text-slate-900">
-                  ₹{formatIndianNumber(section80C)}
-                </span>
+                <EditableValue value={section80C} onChange={setSection80C} min={0} max={150000} prefix="₹" className="text-sm" />
               </div>
               <input
                 type="range"
@@ -430,9 +427,7 @@ const TaxCalculator = forwardRef<TaxCalculatorRef>(function TaxCalculator(props,
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Section 80D (Health Insurance)</label>
-                <span className="font-mono text-sm font-semibold text-slate-900">
-                  ₹{formatIndianNumber(section80D)}
-                </span>
+                <EditableValue value={section80D} onChange={setSection80D} min={0} max={100000} prefix="₹" className="text-sm" />
               </div>
               <input
                 type="range"
@@ -453,9 +448,7 @@ const TaxCalculator = forwardRef<TaxCalculatorRef>(function TaxCalculator(props,
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">HRA Exemption (Annual)</label>
-                <span className="font-mono text-sm font-semibold text-slate-900">
-                  ₹{formatIndianNumber(hra)}
-                </span>
+                <EditableValue value={hra} onChange={setHra} min={0} max={500000} prefix="₹" className="text-sm" />
               </div>
               <input
                 type="range"
@@ -476,9 +469,7 @@ const TaxCalculator = forwardRef<TaxCalculatorRef>(function TaxCalculator(props,
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Other Deductions (80E, 80G, etc.)</label>
-                <span className="font-mono text-sm font-semibold text-slate-900">
-                  ₹{formatIndianNumber(otherDeductions)}
-                </span>
+                <EditableValue value={otherDeductions} onChange={setOtherDeductions} min={0} max={500000} prefix="₹" className="text-sm" />
               </div>
               <input
                 type="range"

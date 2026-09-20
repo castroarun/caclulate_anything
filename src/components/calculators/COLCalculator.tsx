@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
+import { EditableValue } from '@/components/calculator/EditableValue'
 
 interface COLResult {
   fromCity: string
@@ -318,9 +319,7 @@ const COLCalculator = forwardRef<COLCalculatorRef>(function COLCalculator(props,
           <div className="mb-6">
             <div className="flex justify-between items-baseline mb-2">
               <label className="text-sm font-medium text-slate-600">Current Annual Salary in {fromCity}</label>
-              <span className="font-mono text-base font-semibold text-slate-900">
-                ₹{formatIndianNumber(currentSalary)}
-              </span>
+              <EditableValue value={currentSalary} onChange={setCurrentSalary} min={300000} max={50000000} prefix="₹" />
             </div>
             <input
               type="range"

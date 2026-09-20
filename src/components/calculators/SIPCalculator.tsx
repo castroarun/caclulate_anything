@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 import { useNumberFormat } from '@/contexts/NumberFormatContext'
+import { EditableValue } from '@/components/calculator/EditableValue'
 
 interface SIPResult {
   monthlyInvestment: number
@@ -847,14 +848,12 @@ const SIPCalculator = forwardRef<SIPCalculatorRef>(function SIPCalculator(props,
               <div>
                 <div className="flex justify-between items-baseline mb-2">
                   <label className="text-sm font-medium text-slate-600">Monthly Investment</label>
-                  <span className="font-mono text-base font-semibold text-slate-900">
-                    ₹{formatIndianNumber(monthlyInvestment)}
-                  </span>
+                  <EditableValue value={monthlyInvestment} onChange={setMonthlyInvestment} min={500} max={100000} prefix="₹" />
                 </div>
                 <input
                   type="range"
                   min={500}
-                  max={1000000}
+                  max={100000}
                   step={500}
                   value={monthlyInvestment}
                   onChange={(e) => setMonthlyInvestment(Number(e.target.value))}
@@ -862,7 +861,7 @@ const SIPCalculator = forwardRef<SIPCalculatorRef>(function SIPCalculator(props,
                 />
                 <div className="flex justify-between mt-1 text-[10px] text-slate-400">
                   <span>₹500</span>
-                  <span>₹10L</span>
+                  <span>₹1L</span>
                 </div>
               </div>
             ) : (
@@ -870,9 +869,7 @@ const SIPCalculator = forwardRef<SIPCalculatorRef>(function SIPCalculator(props,
               <div>
                 <div className="flex justify-between items-baseline mb-2">
                   <label className="text-sm font-medium text-slate-600">Target Corpus</label>
-                  <span className="font-mono text-base font-semibold text-green-600">
-                    ₹{formatIndianNumber(targetAmount)}
-                  </span>
+                  <EditableValue value={targetAmount} onChange={setTargetAmount} min={100000} max={100000000} prefix="₹" className="text-green-600" />
                 </div>
                 <input
                   type="range"
@@ -910,9 +907,7 @@ const SIPCalculator = forwardRef<SIPCalculatorRef>(function SIPCalculator(props,
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Expected Return Rate</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  {expectedReturn}% p.a.
-                </span>
+                <EditableValue value={expectedReturn} onChange={setExpectedReturn} min={5} max={30} suffix="% p.a." allowDecimal />
               </div>
               <input
                 type="range"
@@ -933,9 +928,7 @@ const SIPCalculator = forwardRef<SIPCalculatorRef>(function SIPCalculator(props,
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Investment Period</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  {investmentPeriod} years
-                </span>
+                <EditableValue value={investmentPeriod} onChange={setInvestmentPeriod} min={1} max={30} suffix="years" />
               </div>
               <input
                 type="range"
@@ -1120,9 +1113,7 @@ const SIPCalculator = forwardRef<SIPCalculatorRef>(function SIPCalculator(props,
             <div className="mb-6">
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Annual Step-Up</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  {stepUpPercent}%
-                </span>
+                <EditableValue value={stepUpPercent} onChange={setStepUpPercent} min={0} max={25} suffix="%" allowDecimal />
               </div>
               <input
                 type="range"

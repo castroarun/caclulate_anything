@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
+import { EditableValue } from '@/components/calculator/EditableValue'
 
 interface HRAResult {
   actualHRA: number
@@ -315,9 +316,7 @@ const HRACalculator = forwardRef<HRACalculatorRef>(function HRACalculator(props,
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Basic Salary (Monthly)</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  ₹{formatIndianNumber(basicSalary)}
-                </span>
+                <EditableValue value={basicSalary} onChange={setBasicSalary} min={10000} max={500000} prefix="₹" />
               </div>
               <input
                 type="range"
@@ -338,9 +337,7 @@ const HRACalculator = forwardRef<HRACalculatorRef>(function HRACalculator(props,
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Dearness Allowance (DA)</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  ₹{formatIndianNumber(da)}
-                </span>
+                <EditableValue value={da} onChange={setDa} min={0} max={100000} prefix="₹" />
               </div>
               <input
                 type="range"
@@ -361,9 +358,7 @@ const HRACalculator = forwardRef<HRACalculatorRef>(function HRACalculator(props,
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">HRA Received (Monthly)</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  ₹{formatIndianNumber(hraReceived)}
-                </span>
+                <EditableValue value={hraReceived} onChange={setHraReceived} min={0} max={200000} prefix="₹" />
               </div>
               <input
                 type="range"
@@ -384,9 +379,7 @@ const HRACalculator = forwardRef<HRACalculatorRef>(function HRACalculator(props,
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Rent Paid (Monthly)</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  ₹{formatIndianNumber(rentPaid)}
-                </span>
+                <EditableValue value={rentPaid} onChange={setRentPaid} min={0} max={200000} prefix="₹" />
               </div>
               <input
                 type="range"

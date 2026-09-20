@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useCloudSync } from '@/hooks/useCloudSync'
 import EMICalculator from '@/components/calculators/EMICalculator'
 import SIPCalculator from '@/components/calculators/SIPCalculator'
+import SWPCalculator from '@/components/calculators/SWPCalculator'
 import FDCalculator from '@/components/calculators/FDCalculator'
 import LumpsumCalculator from '@/components/calculators/LumpsumCalculator'
 import CompoundCalculator from '@/components/calculators/CompoundCalculator'
@@ -34,6 +35,7 @@ const CALCULATOR_GROUPS = [
     items: [
       { id: 'emi', name: 'EMI Calculator', icon: '🏠', accent: 'blue', accentBg: 'bg-blue-50', accentText: 'text-blue-600', accentBorder: 'border-blue-200' },
       { id: 'sip', name: 'SIP Calculator', icon: '📈', accent: 'emerald', accentBg: 'bg-emerald-50', accentText: 'text-emerald-600', accentBorder: 'border-emerald-200' },
+      { id: 'swp', name: 'SWP Calculator', icon: '💸', accent: 'teal', accentBg: 'bg-teal-50', accentText: 'text-teal-600', accentBorder: 'border-teal-200' },
       { id: 'fd', name: 'FD Calculator', icon: '🏦', accent: 'amber', accentBg: 'bg-amber-50', accentText: 'text-amber-600', accentBorder: 'border-amber-200' },
       { id: 'lumpsum', name: 'Lumpsum', icon: '💰', accent: 'violet', accentBg: 'bg-violet-50', accentText: 'text-violet-600', accentBorder: 'border-violet-200' },
       { id: 'compound', name: 'Compound Interest', icon: '📊', accent: 'rose', accentBg: 'bg-rose-50', accentText: 'text-rose-600', accentBorder: 'border-rose-200' },
@@ -321,7 +323,7 @@ function WorkspaceContent() {
           {/* Toggle Button */}
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="absolute -right-3 top-3 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-300 text-xs z-50 transition-colors"
+            className="absolute -right-3 top-3 w-6 h-6 bg-white border border-slate-200 rounded-full hidden md:flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-300 text-xs z-50 transition-colors"
             title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {sidebarCollapsed ? '›' : '‹'}
@@ -443,18 +445,18 @@ function WorkspaceContent() {
 
         {/* Main Content */}
         <main
-          className={`flex-1 transition-all duration-200 ml-0 ${
+          className={`flex-1 min-w-0 transition-all duration-200 ml-0 ${
             sidebarCollapsed ? 'md:ml-10' : 'md:ml-[260px]'
           }`}
         >
           <div className="max-w-4xl mx-auto p-4 md:p-6">
             {/* Calculator Header */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 ${activeCalculator?.accentBg || 'bg-blue-50'} rounded-xl flex items-center justify-center text-xl`}>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={`w-10 h-10 shrink-0 ${activeCalculator?.accentBg || 'bg-blue-50'} rounded-xl flex items-center justify-center text-xl`}>
                   {activeCalculator?.icon}
                 </div>
-                <div>
+                <div className="min-w-0">
                   <h1 className="text-xl font-semibold text-slate-900">
                     {activeCalculator?.name}
                     {favorites.includes(activeCalc) && (
@@ -464,6 +466,7 @@ function WorkspaceContent() {
                   <p className="text-sm text-slate-500">
                     {activeCalc === 'emi' && 'Calculate your monthly loan payment'}
                     {activeCalc === 'sip' && 'Plan your systematic investments'}
+                    {activeCalc === 'swp' && 'Plan monthly withdrawals from a lumpsum'}
                     {activeCalc === 'fd' && 'Calculate fixed deposit returns'}
                     {activeCalc === 'lumpsum' && 'Calculate one-time investment growth'}
                     {activeCalc === 'compound' && 'See the power of compound interest'}
@@ -485,7 +488,7 @@ function WorkspaceContent() {
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
                 {/* Favorite button */}
                 <button
                   onClick={() => toggleFavorite(activeCalc)}
@@ -525,6 +528,7 @@ function WorkspaceContent() {
             {/* Calculator Component */}
             {activeCalc === 'emi' && <EMICalculator ref={calculatorRef as React.RefObject<{ exportToPDF: () => void; exportToHTML: () => void; exportToExcel: () => void; handleClear: () => void }>} />}
             {activeCalc === 'sip' && <SIPCalculator ref={calculatorRef as React.RefObject<{ exportToPDF: () => void; exportToHTML: () => void; exportToExcel: () => void; handleClear: () => void }>} />}
+            {activeCalc === 'swp' && <SWPCalculator ref={calculatorRef as React.RefObject<{ exportToPDF: () => void; exportToHTML: () => void; exportToExcel: () => void; handleClear: () => void }>} />}
             {activeCalc === 'fd' && <FDCalculator ref={calculatorRef as React.RefObject<{ exportToPDF: () => void; exportToHTML: () => void; exportToExcel: () => void; handleClear: () => void }>} />}
             {activeCalc === 'lumpsum' && <LumpsumCalculator ref={calculatorRef as React.RefObject<{ exportToPDF: () => void; exportToHTML: () => void; exportToExcel: () => void; handleClear: () => void }>} />}
             {activeCalc === 'compound' && <CompoundCalculator ref={calculatorRef as React.RefObject<{ exportToPDF: () => void; exportToHTML: () => void; exportToExcel: () => void; handleClear: () => void }>} />}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
+import { EditableValue } from '@/components/calculator/EditableValue'
 
 interface GoalResult {
   targetAmount: number
@@ -317,9 +318,7 @@ const GoalCalculator = forwardRef<GoalCalculatorRef>(function GoalCalculator(pro
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Target Amount</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  ₹{formatIndianNumber(targetAmount)}
-                </span>
+                <EditableValue value={targetAmount} onChange={setTargetAmount} min={100000} max={100000000} prefix="₹" />
               </div>
               <input
                 type="range"
@@ -340,9 +339,7 @@ const GoalCalculator = forwardRef<GoalCalculatorRef>(function GoalCalculator(pro
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Current Savings</label>
-                <span className="font-mono text-sm font-semibold text-slate-900">
-                  ₹{formatIndianNumber(currentSavings)}
-                </span>
+                <EditableValue value={currentSavings} onChange={setCurrentSavings} min={0} max={targetAmount / 2} prefix="₹" className="text-sm" />
               </div>
               <input
                 type="range"
@@ -363,9 +360,7 @@ const GoalCalculator = forwardRef<GoalCalculatorRef>(function GoalCalculator(pro
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Time Horizon</label>
-                <span className="font-mono text-sm font-semibold text-slate-900">
-                  {timeYears} years
-                </span>
+                <EditableValue value={timeYears} onChange={setTimeYears} min={1} max={30} suffix="years" className="text-sm" />
               </div>
               <input
                 type="range"
@@ -386,9 +381,7 @@ const GoalCalculator = forwardRef<GoalCalculatorRef>(function GoalCalculator(pro
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Expected Return</label>
-                <span className="font-mono text-sm font-semibold text-slate-900">
-                  {expectedReturn}% p.a.
-                </span>
+                <EditableValue value={expectedReturn} onChange={setExpectedReturn} min={5} max={20} suffix="% p.a." allowDecimal className="text-sm" />
               </div>
               <input
                 type="range"

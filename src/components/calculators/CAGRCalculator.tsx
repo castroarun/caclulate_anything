@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
+import { EditableValue } from '@/components/calculator/EditableValue'
 
 interface CAGRResult {
   initialValue: number
@@ -367,9 +368,7 @@ const CAGRCalculator = forwardRef<CAGRCalculatorRef>(function CAGRCalculator(pro
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Initial Investment</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  ₹{formatIndianNumber(initialValue)}
-                </span>
+                <EditableValue value={initialValue} onChange={setInitialValue} min={1000} max={100000000} prefix="₹" />
               </div>
               <input
                 type="range"
@@ -391,9 +390,7 @@ const CAGRCalculator = forwardRef<CAGRCalculatorRef>(function CAGRCalculator(pro
               <div>
                 <div className="flex justify-between items-baseline mb-2">
                   <label className="text-sm font-medium text-slate-600">Final Value</label>
-                  <span className="font-mono text-base font-semibold text-slate-900">
-                    ₹{formatIndianNumber(finalValue)}
-                  </span>
+                  <EditableValue value={finalValue} onChange={setFinalValue} min={1000} max={100000000} prefix="₹" />
                 </div>
                 <input
                   type="range"
@@ -414,9 +411,7 @@ const CAGRCalculator = forwardRef<CAGRCalculatorRef>(function CAGRCalculator(pro
               <div>
                 <div className="flex justify-between items-baseline mb-2">
                   <label className="text-sm font-medium text-slate-600">Expected CAGR</label>
-                  <span className="font-mono text-base font-semibold text-emerald-600">
-                    {targetCagr}% p.a.
-                  </span>
+                  <EditableValue value={targetCagr} onChange={setTargetCagr} min={1} max={50} suffix="% p.a." allowDecimal className="text-emerald-600" />
                 </div>
                 <input
                   type="range"
@@ -454,9 +449,7 @@ const CAGRCalculator = forwardRef<CAGRCalculatorRef>(function CAGRCalculator(pro
             <div>
               <div className="flex justify-between items-baseline mb-2">
                 <label className="text-sm font-medium text-slate-600">Time Period</label>
-                <span className="font-mono text-base font-semibold text-slate-900">
-                  {years} years
-                </span>
+                <EditableValue value={years} onChange={setYears} min={1} max={30} suffix="years" />
               </div>
               <input
                 type="range"
